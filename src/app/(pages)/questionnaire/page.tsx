@@ -3,10 +3,12 @@
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptSearchDialog from "../../component/ReceptSearchDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 
 export default function QuestionnairePage() {
+  const searchParams = useSearchParams();
   // 問診項目データ
   const questions = [
     { label: "a: 血圧を下げる薬の使用の有無", options: ["", "はい", "いいえ"] },
@@ -40,6 +42,13 @@ export default function QuestionnairePage() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
+
+  useEffect(() => {
+    const pId = searchParams.get("patientId");
+    const rId = searchParams.get("receptId");
+    if (pId) setPatientId(pId);
+    if (rId) setReceptionId(rId);
+  }, [searchParams]);
 
   const handleReceptSearch = async () => {
     if (!patientId) {

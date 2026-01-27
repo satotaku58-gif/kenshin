@@ -2,9 +2,11 @@
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 
 export default function ReceptionPage() {
+  const router = useRouter();
   // 性別コードを日本語に変換
   function getGenderLabel(gender: string | number | undefined): string {
     if (gender === '1' || gender === 1) return '男性';
@@ -79,23 +81,27 @@ export default function ReceptionPage() {
       return;
     }
 
-    const { error } = await supabase.from("recept").insert([
+    const { data, error } = await supabase.from("recept").insert([
       {
         patient_id: patientId,
         recept_date: receptDate,
         course: selectedCourse
       }
-    ]);
+    ]).select();
 
     if (error) {
       console.error("受付登録エラー:", error);
       alert("受付登録に失敗しました: " + error.message);
     } else {
-      alert("受付を完了しました");
+      alert("受付を完了しました。問診入力画面へ遷移します。");
+      const receptId = data[0]?.id;
       // 登録後に状態をリセット
       setPatientId("");
       setPatientInfo(null);
       setSelectedCourse("");
+      
+      // 問診入力画面へ遷移
+      router.push(`/questionnaire?patientId=${patientId}&receptId=${receptId}`);
     }
   };
 
