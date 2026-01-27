@@ -31,6 +31,24 @@ export default function QuestionnairePage() {
   ];
 
   const [answers, setAnswers] = useState(Array(questions.length).fill(""));
+  const [patientId, setPatientId] = useState("");
+  const [receptionId, setReceptionId] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const handleStart = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!patientId) newErrors.patientId = "患者IDを入力してください";
+    if (!receptionId) newErrors.receptionId = "受付IDを入力してください";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setShowForm(false);
+    } else {
+      setErrors({});
+      setShowForm(true);
+    }
+  };
 
   const handleChange = (idx: number, value: string) => {
     const newAnswers = [...answers];
@@ -42,66 +60,139 @@ export default function QuestionnairePage() {
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
       <AppHeader />
       <main className="flex-1 w-full py-8 px-4">
-        <div className="max-w-4xl w-full mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-8 border-b border-slate-100 bg-emerald-50/30">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-800">問診入力</h2>
-                  <p className="text-sm text-slate-500 font-medium">現在の健康状態や生活習慣について回答してください。</p>
-                </div>
+        <div className="max-w-4xl w-full mx-auto space-y-6">
+          {/* 検索・開始セクション */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">問診開始</h2>
+                <p className="text-sm text-slate-500">患者IDと受付IDを入力して、問診を開始してください。</p>
               </div>
             </div>
 
-            <div className="p-0">
-              <form className="divide-y divide-slate-100">
-                {questions.map((q, idx) => (
-                  <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6 hover:bg-slate-50 transition-colors group">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors shrink-0">
-                        {idx + 1}
-                      </div>
-                      <div className="text-[15px] font-bold text-slate-700 leading-relaxed">
-                        {q.label.split('\n').map((line, i) => (
-                          <div key={i}>{line}</div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="w-full sm:w-64 shrink-0">
-                      <select
-                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700 appearance-none"
-                        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
-                        value={answers[idx]}
-                        onChange={e => handleChange(idx, e.target.value)}
-                      >
-                        <option value="">選択してください</option>
-                        {q.options.filter(opt => opt !== "").map((opt, oidx) => (
-                          <option key={oidx} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
+            <div className="flex flex-col sm:flex-row items-end gap-6">
+              <div className="flex-1 w-full relative">
+                <label className="block text-sm font-bold text-slate-600 mb-2">患者ID</label>
+                <input
+                  type="text"
+                  placeholder="例: 1001"
+                  className={`w-full px-4 py-3 bg-slate-50/50 border ${errors.patientId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700`}
+                  value={patientId}
+                  onChange={e => {
+                    setPatientId(e.target.value);
+                    if (errors.patientId) setErrors(prev => ({ ...prev, patientId: "" }));
+                  }}
+                />
+                {errors.patientId && (
+                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.patientId}
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
                   </div>
-                ))}
-              </form>
-            </div>
-
-            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end">
+                )}
+              </div>
+              <div className="flex-1 w-full relative">
+                <label className="block text-sm font-bold text-slate-600 mb-2">受付ID</label>
+                <input
+                  type="text"
+                  placeholder="例: 5001"
+                  className={`w-full px-4 py-3 bg-slate-50/50 border ${errors.receptionId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700`}
+                  value={receptionId}
+                  onChange={e => {
+                    setReceptionId(e.target.value);
+                    if (errors.receptionId) setErrors(prev => ({ ...prev, receptionId: "" }));
+                  }}
+                />
+                {errors.receptionId && (
+                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.receptionId}
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                  </div>
+                )}
+              </div>
               <button
-                type="button"
-                className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl shadow-slate-200 hover:bg-emerald-600 hover:shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2 group"
+                onClick={handleStart}
+                className="w-full sm:w-auto px-10 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                <span>回答を一時保存する</span>
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                <span>問診入力を開始する</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
               </button>
             </div>
           </div>
+
+          {showForm && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="p-8 border-b border-slate-100 bg-emerald-50/30">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">問診入力</h2>
+                    <p className="text-sm text-slate-500 font-medium">現在の健康状態や生活習慣について回答してください。</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-0">
+                <form className="divide-y divide-slate-100">
+                  {questions.map((q, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-6 hover:bg-slate-50 transition-colors group">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors shrink-0">
+                          {idx + 1}
+                        </div>
+                        <div className="text-[15px] font-bold text-slate-700 leading-relaxed">
+                          {q.label.split('\n').map((line, i) => (
+                            <div key={i}>{line}</div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="w-full sm:w-64 shrink-0">
+                        <select
+                          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700 appearance-none"
+                          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
+                          value={answers[idx]}
+                          onChange={e => handleChange(idx, e.target.value)}
+                        >
+                          <option value="">選択してください</option>
+                          {q.options.filter(opt => opt !== "").map((opt, oidx) => (
+                            <option key={oidx} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </form>
+              </div>
+
+              <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button
+                  type="button"
+                  className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl shadow-slate-200 hover:bg-emerald-600 hover:shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2 group"
+                >
+                  <span>回答を一時保存する</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
