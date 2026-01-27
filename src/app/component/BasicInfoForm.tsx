@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../supabaseClient";
 
 export default function BasicInfoForm() {
+  const router = useRouter();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [form, setForm] = useState({
     name: "",
@@ -67,11 +69,12 @@ export default function BasicInfoForm() {
       phone: form.tel,
       mailaddress: form.email,
     };
-    const { error } = await supabase.from("patient_basic").insert([insertData]);
+    const { data, error } = await supabase.from("patient_basic").insert([insertData]).select();
     if (error) {
       alert("登録に失敗しました: " + error.message);
     } else {
-      alert("送信しました");
+      alert("送信しました。検査受付画面へ遷移します。");
+      const patientId = data[0]?.id;
       setForm({
         name: "",
         nameKana: "",
@@ -85,6 +88,8 @@ export default function BasicInfoForm() {
         insuredSymbol: "",
         insuredNumber: "",
       });
+      // 受付画面へ遷移
+      router.push(`/reception?patientId=${patientId}`);
     }
   };
 

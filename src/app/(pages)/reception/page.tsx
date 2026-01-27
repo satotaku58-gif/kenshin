@@ -2,11 +2,12 @@
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 
 export default function ReceptionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   // 性別コードを日本語に変換
   function getGenderLabel(gender: string | number | undefined): string {
     if (gender === '1' || gender === 1) return '男性';
@@ -35,6 +36,30 @@ export default function ReceptionPage() {
   const [selectedCourse, setSelectedCourse] = useState("");
   const [receptDate, setReceptDate] = useState(new Date().toISOString().split('T')[0]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    const pId = searchParams.get("patientId");
+    if (pId) {
+      setPatientId(pId);
+      // 自動的に患者情報を取得する処理を呼び出す
+      fetchPatientInfo(pId);
+    }
+  }, [searchParams]);
+
+  const fetchPatientInfo = async (id: string) => {
+    if (!id) return;
+    const { data, error } = await supabase
+      .from("patient_basic")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error || !data) {
+      setSearchError("該当する患者が見つかりません");
+      setPatientInfo(null);
+    } else {
+      setPatientInfo(data);
+    }
+  };
 
   useEffect(() => {
     // 検査コース一覧をSupabaseから取得
