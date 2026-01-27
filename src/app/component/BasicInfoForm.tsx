@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "../supabaseClient";
 
 export default function BasicInfoForm() {
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [form, setForm] = useState({
     name: "",
     nameKana: "",
@@ -20,10 +21,32 @@ export default function BasicInfoForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // バリデーション
+    const newErrors: { [key: string]: string } = {};
+    if (!form.name) newErrors.name = "氏名を入力してください";
+    if (!form.nameKana) newErrors.nameKana = "氏名（カナ）を入力してください";
+    if (!form.birth) newErrors.birth = "生年月日を選択してください";
+    if (!form.gender) newErrors.gender = "性別を選択してください";
+    if (!form.zip) newErrors.zip = "郵便番号を入力してください";
+    if (!form.address) newErrors.address = "住所を入力してください";
+    if (!form.tel) newErrors.tel = "電話番号を入力してください";
+    if (!form.insurerNumber) newErrors.insurerNumber = "保険者番号を入力してください";
+    if (!form.insuredSymbol) newErrors.insuredSymbol = "記号を入力してください";
+    if (!form.insuredNumber) newErrors.insuredNumber = "番号を入力してください";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     // patient_basicテーブルのカラム名に合わせてデータをマッピング
     // 性別をsmallint型に変換（male:1, female:2, other:9）
     let sexValue = null;
@@ -90,29 +113,88 @@ export default function BasicInfoForm() {
                 本人確認情報
               </h3>
               
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-bold text-slate-700 mb-2">氏名</label>
-                <input name="name" value={form.name} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="山田 太郎" />
+                <input 
+                  name="name" 
+                  value={form.name} 
+                  onChange={handleChange} 
+                  className={`w-full border ${errors.name ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                  placeholder="山田 太郎" 
+                />
+                {errors.name && (
+                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.name}
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                  </div>
+                )}
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-bold text-slate-700 mb-2">氏名（カナ）</label>
-                <input name="nameKana" value={form.nameKana} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="ヤマダ タロウ" />
+                <input 
+                  name="nameKana" 
+                  value={form.nameKana} 
+                  onChange={handleChange} 
+                  className={`w-full border ${errors.nameKana ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                  placeholder="ヤマダ タロウ" 
+                />
+                {errors.nameKana && (
+                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.nameKana}
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-bold text-slate-700 mb-2">生年月日</label>
-                  <input name="birth" type="date" value={form.birth} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required />
+                  <input 
+                    name="birth" 
+                    type="date" 
+                    value={form.birth} 
+                    onChange={handleChange} 
+                    className={`w-full border ${errors.birth ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                  />
+                  {errors.birth && (
+                    <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.birth}
+                      <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                    </div>
+                  )}
                 </div>
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-bold text-slate-700 mb-2">性別</label>
-                  <select name="gender" value={form.gender} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required>
+                  <select 
+                    name="gender" 
+                    value={form.gender} 
+                    onChange={handleChange} 
+                    className={`w-full border ${errors.gender ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                  >
                     <option value="">選択してください</option>
                     <option value="male">男性</option>
                     <option value="female">女性</option>
                     <option value="other">その他</option>
                   </select>
+                  {errors.gender && (
+                    <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.gender}
+                      <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -124,34 +206,124 @@ export default function BasicInfoForm() {
               </h3>
 
               <div className="flex gap-4">
-                <div className="w-32">
+                <div className="w-32 relative">
                   <label className="block text-sm font-bold text-slate-700 mb-2">郵便番号</label>
-                  <input name="zip" value={form.zip} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="123-4567" />
+                  <input 
+                    name="zip" 
+                    value={form.zip} 
+                    onChange={handleChange} 
+                    className={`w-full border ${errors.zip ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                    placeholder="123-4567" 
+                  />
+                  {errors.zip && (
+                    <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.zip}
+                      <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <label className="block text-sm font-bold text-slate-700 mb-2">住所</label>
-                  <input name="address" value={form.address} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="東京都..." />
+                  <input 
+                    name="address" 
+                    value={form.address} 
+                    onChange={handleChange} 
+                    className={`w-full border ${errors.address ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                    placeholder="東京都..." 
+                  />
+                  {errors.address && (
+                    <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.address}
+                      <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-bold text-slate-700 mb-2">電話番号</label>
-                <input name="tel" value={form.tel} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="090-0000-0000" />
+                <input 
+                  name="tel" 
+                  value={form.tel} 
+                  onChange={handleChange} 
+                  className={`w-full border ${errors.tel ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                  placeholder="090-0000-0000" 
+                />
+                {errors.tel && (
+                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.tel}
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-bold text-slate-700 mb-2">保険者番号</label>
-                  <input name="insurerNumber" value={form.insurerNumber} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="123456" />
+                  <input 
+                    name="insurerNumber" 
+                    value={form.insurerNumber} 
+                    onChange={handleChange} 
+                    className={`w-full border ${errors.insurerNumber ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                    placeholder="123456" 
+                  />
+                  {errors.insurerNumber && (
+                    <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.insurerNumber}
+                      <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-bold text-slate-700 mb-2">記号</label>
-                    <input name="insuredSymbol" value={form.insuredSymbol} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="記号" />
+                    <input 
+                      name="insuredSymbol" 
+                      value={form.insuredSymbol} 
+                      onChange={handleChange} 
+                      className={`w-full border ${errors.insuredSymbol ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                      placeholder="記号" 
+                    />
+                    {errors.insuredSymbol && (
+                      <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {errors.insuredSymbol}
+                        <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                      </div>
+                    )}
                   </div>
-                  <div>
+                  <div className="relative">
                     <label className="block text-sm font-bold text-slate-700 mb-2">番号</label>
-                    <input name="insuredNumber" value={form.insuredNumber} onChange={handleChange} className="w-full border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium" required placeholder="12345" />
+                    <input 
+                      name="insuredNumber" 
+                      value={form.insuredNumber} 
+                      onChange={handleChange} 
+                      className={`w-full border ${errors.insuredNumber ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                      placeholder="12345" 
+                    />
+                    {errors.insuredNumber && (
+                      <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {errors.insuredNumber}
+                        <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

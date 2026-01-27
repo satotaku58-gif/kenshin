@@ -32,6 +32,9 @@ export default function ReceptionPage() {
   const [loadingList, setLoadingList] = useState(false);
   const [courseList, setCourseList] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState("");
+  const [receptDate, setReceptDate] = useState(new Date().toISOString().split('T')[0]);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
   useEffect(() => {
     // 検査コース一覧をSupabaseから取得
     const fetchCourses = async () => {
@@ -77,6 +80,38 @@ export default function ReceptionPage() {
       setPatientList([]);
     }
     setLoadingList(false);
+  };
+
+  const handleReception = async () => {
+    setErrors({});
+    const newErrors: { [key: string]: string } = {};
+    if (!patientId) newErrors.patientId = "IDを入力してください";
+    if (!receptDate) newErrors.receptDate = "受診日を選択してください";
+    if (!selectedCourse) newErrors.selectedCourse = "コースを選択してください";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    const { error } = await supabase.from("recept").insert([
+      {
+        patient_id: patientId,
+        recept_date: receptDate,
+        course: selectedCourse
+      }
+    ]);
+
+    if (error) {
+      console.error("受付登録エラー:", error);
+      alert("受付登録に失敗しました: " + error.message);
+    } else {
+      alert("受付を完了しました");
+      // 登録後に状態をリセット
+      setPatientId("");
+      setPatientInfo(null);
+      setSelectedCourse("");
+    }
   };
 
   return (
@@ -177,7 +212,7 @@ export default function ReceptionPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-end gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                  <div className="flex-1 w-full">
+                  <div className="flex-1 w-full relative">
                     <label className="block text-sm font-bold text-slate-600 mb-2">患者ID検索</label>
                     <div className="relative">
                       <input
@@ -185,9 +220,12 @@ export default function ReceptionPage() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="IDを入力"
-                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-slate-700"
+                        className={`w-full pl-10 pr-4 py-3 bg-white border ${errors.patientId ? 'border-red-500 bg-red-50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-slate-700`}
                         value={patientId}
-                        onChange={e => setPatientId(e.target.value.replace(/[^0-9]/g, ""))}
+                        onChange={e => {
+                          setPatientId(e.target.value.replace(/[^0-9]/g, ""));
+                          if (errors.patientId) setErrors(prev => ({ ...prev, patientId: "" }));
+                        }}
                       />
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,6 +233,15 @@ export default function ReceptionPage() {
                         </svg>
                       </div>
                     </div>
+                    {errors.patientId && (
+                      <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {errors.patientId}
+                        <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 w-full sm:w-auto">
                     <button
@@ -256,16 +303,36 @@ export default function ReceptionPage() {
                       </div>
 
                       <div className="space-y-6">
-                        <div>
+                        <div className="relative">
                           <label className="block text-sm font-bold text-slate-700 mb-2">受診日</label>
-                          <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 font-bold" />
+                          <input 
+                            type="date" 
+                            value={receptDate}
+                            onChange={e => {
+                              setReceptDate(e.target.value);
+                              if (errors.receptDate) setErrors(prev => ({ ...prev, receptDate: "" }));
+                            }}
+                            className={`w-full border ${errors.receptDate ? 'border-red-500 bg-red-50' : 'border-slate-200'} rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 font-bold`} 
+                          />
+                          {errors.receptDate && (
+                            <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              {errors.receptDate}
+                              <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                            </div>
+                          )}
                         </div>
-                        <div>
+                        <div className="relative">
                           <label className="block text-sm font-bold text-slate-700 mb-2">検査コース</label>
                           <select
-                            className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 font-bold"
+                            className={`w-full border ${errors.selectedCourse ? 'border-red-500 bg-red-50' : 'border-slate-200'} rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/20 outline-none bg-slate-50/50 font-bold`}
                             value={selectedCourse}
-                            onChange={e => setSelectedCourse(e.target.value)}
+                            onChange={e => {
+                              setSelectedCourse(e.target.value);
+                              if (errors.selectedCourse) setErrors(prev => ({ ...prev, selectedCourse: "" }));
+                            }}
                           >
                             <option value="">コースを選択してください</option>
                             {courseList.map((course: any) => (
@@ -274,6 +341,15 @@ export default function ReceptionPage() {
                               </option>
                             ))}
                           </select>
+                          {errors.selectedCourse && (
+                            <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                              {errors.selectedCourse}
+                              <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -281,6 +357,7 @@ export default function ReceptionPage() {
                     <div className="flex justify-end pt-6 border-t border-slate-100">
                       <button
                         type="button"
+                        onClick={handleReception}
                         className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl shadow-slate-200 hover:bg-blue-600 hover:shadow-blue-100 transition-all active:scale-95 flex items-center gap-2 group"
                       >
                         <svg className="w-5 h-5 text-blue-400 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
