@@ -1,16 +1,17 @@
 "use client";
 import AppHeader from "../../component/AppHeader";
+import PatientSearchDialog from "../../component/PatientSearchDialog";
 import { useState, useEffect } from "react";
-import { supabase } from "../../component/../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 export default function ReceptionPage() {
-      // 性別コードを日本語に変換
-      function getGenderLabel(gender: string | number | undefined): string {
-        if (gender === '1' || gender === 1) return '男性';
-        if (gender === '2' || gender === 2) return '女性';
-        if (gender === '9' || gender === 9) return 'その他';
-        return '-';
-      }
+  // 性別コードを日本語に変換
+  function getGenderLabel(gender: string | number | undefined): string {
+    if (gender === '1' || gender === 1) return '男性';
+    if (gender === '2' || gender === 2) return '女性';
+    if (gender === '9' || gender === 9) return 'その他';
+    return '-';
+  }
     // 年齢計算関数
     function calcAge(birthdate: string): number | null {
       if (!birthdate) return null;
@@ -28,8 +29,6 @@ export default function ReceptionPage() {
   const [patientInfo, setPatientInfo] = useState<any>(null);
   const [searchError, setSearchError] = useState("");
   const [showDialog, setShowDialog] = useState(false);
-  const [patientList, setPatientList] = useState<any[]>([]);
-  const [loadingList, setLoadingList] = useState(false);
   const [courseList, setCourseList] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [receptDate, setReceptDate] = useState(new Date().toISOString().split('T')[0]);
@@ -66,20 +65,6 @@ export default function ReceptionPage() {
     } else {
       setPatientInfo(data);
     }
-  };
-
-  const handleSearchDialog = async () => {
-    setShowDialog(true);
-    setLoadingList(true);
-    const { data, error } = await supabase
-      .from("patient_basic")
-      .select("id, name, birthdate ,sex");
-    if (!error && data) {
-      setPatientList(data);
-    } else {
-      setPatientList([]);
-    }
-    setLoadingList(false);
   };
 
   const handleReception = async () => {
@@ -119,84 +104,18 @@ export default function ReceptionPage() {
       <AppHeader />
       <main className="flex-1 w-full py-8 px-4">
         <div className="max-w-4xl w-full mx-auto">
-          {showDialog ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-300">
-              <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800">患者検索結果</h3>
-                </div>
-                <button 
-                  onClick={() => setShowDialog(false)}
-                  className="p-2 hover:bg-slate-200 rounded-lg transition-colors"
-                >
-                  <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l18 18" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-6">
-                {loadingList ? (
-                  <div className="flex flex-col items-center py-12 text-slate-400">
-                    <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                    <p>データを読み込み中...</p>
-                  </div>
-                ) : (
-                  <div className="overflow-hidden border border-slate-100 rounded-xl">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                          <th className="px-6 py-4">ID</th>
-                          <th className="px-6 py-4">氏名</th>
-                          <th className="px-6 py-4">生年月日</th>
-                          <th className="px-6 py-4">性別</th>
-                          <th className="px-6 py-4 text-right">アクション</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {patientList.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="px-6 py-12 text-center text-slate-400">患者データが見つかりませんでした</td>
-                          </tr>
-                        ) : (
-                          patientList.map((p) => (
-                            <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-6 py-4 font-mono text-blue-600 font-bold">{p.id}</td>
-                              <td className="px-6 py-4 font-bold text-slate-800">{p.name}</td>
-                              <td className="px-6 py-4 text-slate-500">{p.birthdate}</td>
-                              <td className="px-6 py-4">
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                  p.sex === 1 ? "bg-blue-100 text-blue-700" : p.sex === 2 ? "bg-pink-100 text-pink-700" : "bg-slate-100 text-slate-700"
-                                }`}>
-                                  {getGenderLabel(p.sex)}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <button
-                                  className="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-sm"
-                                  onClick={() => {
-                                    setPatientInfo(p);
-                                    setPatientId(p.id.toString());
-                                    setShowDialog(false);
-                                  }}
-                                >
-                                  選択
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
+          <PatientSearchDialog
+            isOpen={showDialog}
+            onClose={() => setShowDialog(false)}
+            onSelect={(p) => {
+              setPatientInfo(p);
+              setPatientId(p.id.toString());
+              setShowDialog(false);
+            }}
+            themeColor="blue"
+          />
+
+          {showDialog ? null : (
             <div className="space-y-6">
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
                 <div className="flex items-center gap-4 mb-8">
@@ -254,7 +173,7 @@ export default function ReceptionPage() {
                     <button
                       type="button"
                       className="flex-1 sm:flex-none border border-slate-200 bg-white text-slate-600 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all active:scale-95"
-                      onClick={handleSearchDialog}
+                      onClick={() => setShowDialog(true)}
                     >
                       一覧から検索
                     </button>

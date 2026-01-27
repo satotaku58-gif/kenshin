@@ -1,6 +1,7 @@
 "use client";
 
 import AppHeader from "../../component/AppHeader";
+import PatientSearchDialog from "../../component/PatientSearchDialog";
 import { useState } from "react";
 
 export default function QuestionnairePage() {
@@ -35,6 +36,7 @@ export default function QuestionnairePage() {
   const [receptionId, setReceptionId] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showDialog, setShowDialog] = useState(false);
 
   const handleStart = () => {
     const newErrors: { [key: string]: string } = {};
@@ -61,6 +63,17 @@ export default function QuestionnairePage() {
       <AppHeader />
       <main className="flex-1 w-full py-8 px-4">
         <div className="max-w-4xl w-full mx-auto space-y-6">
+          <PatientSearchDialog
+            isOpen={showDialog}
+            onClose={() => setShowDialog(false)}
+            onSelect={(p) => {
+              setPatientId(p.id.toString());
+              if (errors.patientId) setErrors((prev) => ({ ...prev, patientId: "" }));
+              setShowDialog(false);
+            }}
+            themeColor="emerald"
+          />
+
           {/* 検索・開始セクション */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
             <div className="flex items-center gap-4 mb-8">
@@ -92,6 +105,7 @@ export default function QuestionnairePage() {
                     />
                     <button
                       type="button"
+                      onClick={() => setShowDialog(true)}
                       className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center shrink-0 group"
                       title="患者IDを検索"
                     >
