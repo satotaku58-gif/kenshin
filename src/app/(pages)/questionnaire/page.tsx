@@ -61,7 +61,7 @@ export default function QuestionnairePage() {
     setShowReceptDialog(true);
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     const newErrors: { [key: string]: string } = {};
     if (!patientId) newErrors.patientId = "患者IDを入力してください";
     if (!receptionId) newErrors.receptionId = "受付IDを入力してください";
@@ -69,10 +69,38 @@ export default function QuestionnairePage() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setShowForm(false);
-    } else {
-      setErrors({});
-      setShowForm(true);
+      return;
     }
+
+    // 患者存在チェック
+    const { data: patientData, error: patientError } = await supabase
+      .from("patient_basic")
+      .select("id")
+      .eq("id", patientId)
+      .single();
+
+    if (patientError || !patientData) {
+      setErrors({ patientId: "登録されていない患者IDです" });
+      setShowForm(false);
+      return;
+    }
+
+    // 受付存在チェック (患者IDと受付IDの整合性)
+    const { data: receptData, error: receptError } = await supabase
+      .from("recept")
+      .select("id")
+      .eq("id", receptionId)
+      .eq("patient_id", patientId)
+      .single();
+
+    if (receptError || !receptData) {
+      setErrors({ receptionId: "指定の患者IDに対する受付データが見つかりません" });
+      setShowForm(false);
+      return;
+    }
+
+    setErrors({});
+    setShowForm(true);
   };
 
   const handleChange = (idx: number, value: string) => {
