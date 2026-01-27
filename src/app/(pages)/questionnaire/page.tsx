@@ -2,7 +2,9 @@
 
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
+import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import { useState } from "react";
+import { supabase } from "../../supabaseClient";
 
 export default function QuestionnairePage() {
   // 問診項目データ
@@ -37,6 +39,27 @@ export default function QuestionnairePage() {
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
+  const [showReceptDialog, setShowReceptDialog] = useState(false);
+
+  const handleReceptSearch = async () => {
+    if (!patientId) {
+      setErrors((prev) => ({ ...prev, patientId: "先に患者IDを入力してください" }));
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("recept")
+      .select("id")
+      .eq("patient_id", patientId)
+      .limit(1);
+
+    if (error || !data || data.length === 0) {
+      setErrors((prev) => ({ ...prev, receptionId: "受付データがありません" }));
+      return;
+    }
+
+    setShowReceptDialog(true);
+  };
 
   const handleStart = () => {
     const newErrors: { [key: string]: string } = {};
@@ -72,6 +95,17 @@ export default function QuestionnairePage() {
               setShowDialog(false);
             }}
             themeColor="emerald"
+          />
+
+          <ReceptSearchDialog
+            isOpen={showReceptDialog}
+            onClose={() => setShowReceptDialog(false)}
+            onSelect={(r) => {
+              setReceptionId(r.id.toString());
+              if (errors.receptionId) setErrors((prev) => ({ ...prev, receptionId: "" }));
+              setShowReceptDialog(false);
+            }}
+            patientId={patientId}
           />
 
           {/* 検索・開始セクション */}
@@ -139,6 +173,7 @@ export default function QuestionnairePage() {
                     />
                     <button
                       type="button"
+                      onClick={handleReceptSearch}
                       className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center shrink-0 group"
                       title="受付IDを検索"
                     >
