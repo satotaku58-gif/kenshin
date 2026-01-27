@@ -1,10 +1,11 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 const AppHeader = () => {
   const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
     { name: "患者情報入力", path: "/patient_basic" },
@@ -49,16 +50,54 @@ const AppHeader = () => {
         </ul>
 
         <div className="flex items-center gap-3">
-          <button className="hidden sm:flex px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
+          <button className="hidden lg:flex px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
             ログアウト
           </button>
-          <button className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+          <button 
+            className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+              {isMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+              )}
             </svg>
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="lg:hidden border-t border-slate-100 bg-white">
+          <ul className="flex flex-col p-4 gap-1">
+            {navItems.map((item) => {
+              const isActive = pathname === item.path;
+              return (
+                <li key={item.path}>
+                  <Link
+                    href={item.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={`block px-4 py-3 rounded-lg text-sm font-bold transition-all duration-200 ${
+                      isActive
+                        ? "bg-cyan-50 text-cyan-700 shadow-sm ring-1 ring-cyan-100"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              );
+            })}
+            <li className="mt-2 pt-2 border-t border-slate-50">
+              <button className="w-full px-4 py-3 text-sm font-bold text-left text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+                ログアウト
+              </button>
+            </li>
+          </ul>
+        </div>
+      )}
     </header>
   );
 };
