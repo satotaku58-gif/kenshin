@@ -1,12 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../supabaseClient";
 
-export default function BasicInfoForm() {
+interface BasicInfoFormProps {
+  editData?: any;
+  mode?: "register" | "edit";
+}
+
+export default function BasicInfoForm({ editData, mode = "register" }: BasicInfoFormProps) {
   const router = useRouter();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [form, setForm] = useState({
+  const initialForm = {
     name: "",
     nameKana: "",
     birth: "",
@@ -18,7 +23,29 @@ export default function BasicInfoForm() {
     insurerNumber: "",
     insuredSymbol: "",
     insuredNumber: "",
-  });
+  };
+  const [form, setForm] = useState(initialForm);
+
+  useEffect(() => {
+    setErrors({});
+    if (editData) {
+      setForm({
+        name: editData.name || "",
+        nameKana: editData.name_kana || "",
+        birth: editData.birthdate || "",
+        gender: editData.sex === 1 ? "male" : editData.sex === 2 ? "female" : editData.sex === 9 ? "other" : "",
+        zip: editData.postcode || "",
+        address: editData.address || "",
+        tel: editData.phone || "",
+        email: editData.mailaddress || "",
+        insurerNumber: editData.Insurer_number || "",
+        insuredSymbol: editData.Insurance_cardcode || "",
+        insuredNumber: editData.Insurance_card_number || "",
+      });
+    } else {
+      setForm(initialForm);
+    }
+  }, [editData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,7 +83,7 @@ export default function BasicInfoForm() {
     else if (form.gender === "female") sexValue = 2;
     else if (form.gender === "other") sexValue = 9;
 
-    const insertData = {
+    const patientData = {
       name: form.name,
       name_kana: form.nameKana,
       birthdate: form.birth,
@@ -69,32 +96,37 @@ export default function BasicInfoForm() {
       phone: form.tel,
       mailaddress: form.email,
     };
-    const { data, error } = await supabase.from("patient_basic").insert([insertData]).select();
-    if (error) {
-      alert("登録に失敗しました: " + error.message);
+
+    let result;
+    if (mode === "edit" && editData?.id) {
+      result = await supabase
+        .from("patient_basic")
+        .update(patientData)
+        .eq("id", editData.id)
+        .select();
     } else {
-      alert("送信しました。検査受付画面へ遷移します。");
+      result = await supabase
+        .from("patient_basic")
+        .insert([patientData])
+        .select();
+    }
+
+    const { data, error } = result;
+    if (error) {
+      alert((mode === "edit" ? "更新" : "登録") + "に失敗しました: " + error.message);
+    } else {
+      alert(mode === "edit" ? "情報を更新しました。" : "送信しました。検査受付画面へ遷移します。");
       const patientId = data[0]?.id;
-      setForm({
-        name: "",
-        nameKana: "",
-        birth: "",
-        gender: "",
-        zip: "",
-        address: "",
-        tel: "",
-        email: "",
-        insurerNumber: "",
-        insuredSymbol: "",
-        insuredNumber: "",
-      });
-      // 受付画面へ遷移
-      router.push(`/reception?patientId=${patientId}`);
+      if (mode !== "edit") {
+        setForm(initialForm);
+        // 受付画面へ遷移
+        router.push(`/reception?patientId=${patientId}`);
+      }
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4">
+    <div className="w-full max-w-4xl mx-auto">
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-8 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-4">
@@ -104,8 +136,14 @@ export default function BasicInfoForm() {
               </svg>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">患者情報入力</h2>
-              <p className="text-sm text-slate-500 font-medium">新規患者の基本情報と保険情報を登録します。</p>
+              <h2 className="text-2xl font-bold text-slate-800">
+                {mode === "edit" ? "患者情報修正" : "患者情報入力"}
+              </h2>
+              <p className="text-sm text-slate-500 font-medium">
+                {mode === "edit" 
+                  ? "登録済みの患者情報を修正します。" 
+                  : "新規患者の基本情報と保険情報を登録します。"}
+              </p>
             </div>
           </div>
         </div>
@@ -340,7 +378,7 @@ export default function BasicInfoForm() {
               type="submit"
               className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl shadow-slate-200 hover:bg-cyan-600 hover:shadow-cyan-100 transition-all active:scale-95 flex items-center gap-2 group"
             >
-              <span>データを登録する</span>
+              <span>{mode === "edit" ? "情報を更新する" : "データを登録する"}</span>
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
