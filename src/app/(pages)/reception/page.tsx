@@ -106,8 +106,28 @@ export default function ReceptionPage() {
       return;
     }
 
+
+    // 受診日が一致するreceptのrecept_id最大値を取得
+    const { data: maxIdData, error: maxIdError } = await supabase
+      .from("recept")
+      .select("recept_id")
+      .eq("recept_date", receptDate)
+      .order("recept_id", { ascending: false })
+      .limit(1);
+
+    if (maxIdError) {
+      alert("受付IDの取得に失敗しました: " + maxIdError.message);
+      return;
+    }
+
+    let newReceptId = 1;
+    if (maxIdData && maxIdData.length > 0 && maxIdData[0].recept_id != null) {
+      newReceptId = Number(maxIdData[0].recept_id) + 1;
+    }
+
     const { data, error } = await supabase.from("recept").insert([
       {
+        recept_id: newReceptId,
         patient_id: patientId,
         recept_date: receptDate,
         course: selectedCourse
@@ -124,7 +144,6 @@ export default function ReceptionPage() {
       setPatientId("");
       setPatientInfo(null);
       setSelectedCourse("");
-      
       // 問診入力画面へ遷移
       router.push(`/questionnaire?patientId=${patientId}&receptId=${receptId}`);
     }
