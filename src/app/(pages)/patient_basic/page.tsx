@@ -100,7 +100,10 @@ export default function Home() {
           </div>
         )}
 
-        <BasicInfoForm mode={mode} editData={editData} />
+        {/* 新規登録モード、または修正モードでデータが取得できている場合のみフォームを表示 */}
+        { (mode === "register" || (mode === "edit" && editData)) && (
+          <BasicInfoForm mode={mode} editData={editData} />
+        )}
 
         <PatientSearchDialog
           isOpen={showSearchDialog}
