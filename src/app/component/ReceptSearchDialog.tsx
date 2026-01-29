@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 
 interface Reception {
   id: number;
+  recept_id: number;
   recept_date: string;
   course: string;
 }
@@ -42,9 +43,10 @@ export default function ReceptSearchDialog({
     setLoading(true);
     const { data, error } = await supabase
       .from("recept")
-      .select("id, recept_date, course")
+      .select("id, recept_id, recept_date, course")
       .eq("patient_id", patientId)
-      .order("recept_date", { ascending: false });
+      .order("recept_date", { ascending: true })
+      .order("recept_id", { ascending: true });
     
     if (!error && data) {
       setReceptList(data);
@@ -109,7 +111,7 @@ export default function ReceptSearchDialog({
                     ) : (
                       receptList.map((r) => (
                         <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{r.id}</td>
+                          <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{r.recept_id}</td>
                           <td className="px-6 py-4 text-slate-700 font-medium">{r.recept_date}</td>
                           <td className="px-6 py-4">
                             <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">

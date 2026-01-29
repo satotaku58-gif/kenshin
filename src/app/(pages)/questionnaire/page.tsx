@@ -37,6 +37,7 @@ export default function QuestionnairePage() {
 
   const [answers, setAnswers] = useState(Array(questions.length).fill(""));
   const [patientId, setPatientId] = useState("");
+  const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
   const [receptionId, setReceptionId] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -46,8 +47,10 @@ export default function QuestionnairePage() {
   useEffect(() => {
     const pId = searchParams.get("patientId");
     const rId = searchParams.get("receptId");
+    const rDate = searchParams.get("receptDate");
     if (pId) setPatientId(pId);
     if (rId) setReceptionId(rId);
+    if (rDate) setReceptionDate(rDate);
   }, [searchParams]);
 
   const handleReceptSearch = async () => {
@@ -73,6 +76,7 @@ export default function QuestionnairePage() {
   const handleStart = async () => {
     const newErrors: { [key: string]: string } = {};
     if (!patientId) newErrors.patientId = "患者IDを入力してください";
+    if (!receptionDate) newErrors.receptionDate = "受診日を選択してください";
     if (!receptionId) newErrors.receptionId = "受付IDを入力してください";
 
     if (Object.keys(newErrors).length > 0) {
@@ -94,12 +98,13 @@ export default function QuestionnairePage() {
       return;
     }
 
-    // 受付存在チェック (患者IDと受付IDの整合性)
+    // 受付存在チェック (患者ID、受診日、受付IDの整合性)
     const { data: receptData, error: receptError } = await supabase
       .from("recept")
-      .select("id")
-      .eq("id", receptionId)
+      .select("id, recept_id")
+      .eq("recept_id", receptionId)
       .eq("patient_id", patientId)
+      .eq("recept_date", receptionDate)
       .single();
 
     if (receptError || !receptData) {
@@ -138,8 +143,10 @@ export default function QuestionnairePage() {
             isOpen={showReceptDialog}
             onClose={() => setShowReceptDialog(false)}
             onSelect={(r) => {
-              setReceptionId(r.id.toString());
+              setReceptionId(r.recept_id.toString());
+              setReceptionDate(r.recept_date);
               if (errors.receptionId) setErrors((prev) => ({ ...prev, receptionId: "" }));
+              if (errors.receptionDate) setErrors((prev) => ({ ...prev, receptionDate: "" }));
               setShowReceptDialog(false);
             }}
             patientId={patientId}
@@ -160,7 +167,7 @@ export default function QuestionnairePage() {
             </div>
 
             <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
                 <div className="relative">
                   <label className="block text-sm font-bold text-slate-600 mb-2">患者ID</label>
                   <div className="flex gap-2">
@@ -191,6 +198,27 @@ export default function QuestionnairePage() {
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                       {errors.patientId}
+                      <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-bold text-slate-600 mb-2">受診日</label>
+                  <input
+                    type="date"
+                    className={`w-full px-4 py-3 bg-slate-50/50 border ${errors.receptionDate ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700`}
+                    value={receptionDate}
+                    onChange={e => {
+                      setReceptionDate(e.target.value);
+                      if (errors.receptionDate) setErrors(prev => ({ ...prev, receptionDate: "" }));
+                    }}
+                  />
+                  {errors.receptionDate && (
+                    <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.receptionDate}
                       <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
                     </div>
                   )}

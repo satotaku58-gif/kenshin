@@ -139,13 +139,13 @@ export default function ReceptionPage() {
       alert("受付登録に失敗しました: " + error.message);
     } else {
       alert("受付を完了しました。問診入力画面へ遷移します。");
-      const receptId = data[0]?.id;
+      const receptId = newReceptId;
       // 登録後に状態をリセット
       setPatientId("");
       setPatientInfo(null);
       setSelectedCourse("");
       // 問診入力画面へ遷移
-      router.push(`/questionnaire?patientId=${patientId}&receptId=${receptId}`);
+      router.push(`/questionnaire?patientId=${patientId}&receptId=${receptId}&receptDate=${receptDate}`);
     }
   };
 
