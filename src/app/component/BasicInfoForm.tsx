@@ -51,7 +51,18 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // 入力制限
+    let newValue = value;
+    if (["zip", "tel"].includes(name)) {
+      // 郵便番号、電話番号：数字とハイフンのみ
+      newValue = value.replace(/[^0-9-]/g, "");
+    } else if (["insurerNumber", "insuredSymbol", "insuredNumber"].includes(name)) {
+      // 保険者番号、記号、番号：数字のみ
+      newValue = value.replace(/[^0-9]/g, "");
+    }
+
+    setForm((prev) => ({ ...prev, [name]: newValue }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
     }
@@ -90,12 +101,12 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
       name_kana: form.nameKana,
       birthdate: form.birth,
       sex: sexValue,
-      postcode: form.zip,
+      postcode: form.zip.replace(/-/g, ""),
       address: form.address,
       Insurer_number: form.insurerNumber,
       Insurance_cardcode: form.insuredSymbol,
       Insurance_card_number: form.insuredNumber,
-      phone: form.tel,
+      phone: form.tel.replace(/-/g, ""),
       mailaddress: form.email,
     };
 
