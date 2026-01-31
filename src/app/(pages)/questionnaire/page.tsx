@@ -37,6 +37,7 @@ export default function QuestionnairePage() {
 
   const [answers, setAnswers] = useState(Array(questions.length).fill(""));
   const [patientId, setPatientId] = useState("");
+  const [patientName, setPatientName] = useState("");
   const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
   const [receptionId, setReceptionId] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -59,17 +60,6 @@ export default function QuestionnairePage() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("recept")
-      .select("id")
-      .eq("patient_id", patientId)
-      .limit(1);
-
-    if (error || !data || data.length === 0) {
-      setErrors((prev) => ({ ...prev, receptionId: "受付データがありません" }));
-      return;
-    }
-
     setShowReceptDialog(true);
   };
 
@@ -88,7 +78,7 @@ export default function QuestionnairePage() {
     // 患者存在チェック
     const { data: patientData, error: patientError } = await supabase
       .from("patient_basic")
-      .select("id")
+      .select("id, name")
       .eq("id", patientId)
       .single();
 
@@ -97,6 +87,8 @@ export default function QuestionnairePage() {
       setShowForm(false);
       return;
     }
+
+    setPatientName(patientData.name);
 
     // 受付存在チェック (患者ID、受診日、受付IDの整合性)
     const { data: receptData, error: receptError } = await supabase
@@ -123,16 +115,22 @@ export default function QuestionnairePage() {
     setAnswers(newAnswers);
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
-      <AppHeader />
-      <main className="flex-1 w-full py-8 px-4">
-        <div className="max-w-4xl w-full mx-auto space-y-6">
+      <div className="print:hidden">
+        <AppHeader />
+        <main className="flex-1 w-full py-8 px-4">
+          <div className="max-w-4xl w-full mx-auto space-y-6">
           <PatientSearchDialog
             isOpen={showDialog}
             onClose={() => setShowDialog(false)}
             onSelect={(p) => {
               setPatientId(p.id.toString());
+              setPatientName(p.name);
               if (errors.patientId) setErrors((prev) => ({ ...prev, patientId: "" }));
               setShowDialog(false);
             }}
@@ -275,16 +273,27 @@ export default function QuestionnairePage() {
           {showForm && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="p-8 border-b border-slate-100 bg-emerald-50/30">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-800">問診入力</h2>
+                      <p className="text-sm text-slate-500 font-medium">現在の健康状態や生活習慣について回答してください。</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handlePrint}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm font-bold group"
+                  >
+                    <svg className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-800">問診入力</h2>
-                    <p className="text-sm text-slate-500 font-medium">現在の健康状態や生活習慣について回答してください。</p>
-                  </div>
+                    <span>問診票を印刷する</span>
+                  </button>
                 </div>
               </div>
 
@@ -335,6 +344,68 @@ export default function QuestionnairePage() {
           )}
         </div>
       </main>
+    </div>
+
+    {/* 印刷用レイアウト (A4) */}
+      <div className="hidden print:block p-8 bg-white text-slate-900 min-h-screen">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold border-b-2 border-slate-900 pb-1 inline-block px-8">問診票</h1>
+          </div>
+          
+          <div className="flex justify-between items-center mb-6 p-4 border border-slate-300 rounded-xl bg-slate-50/30 text-sm">
+            <div className="flex gap-8">
+              <div className="flex items-baseline gap-2">
+                <span className="text-slate-500 font-bold tracking-tighter">患者ID:</span>
+                <span className="font-mono font-bold text-lg">{patientId}</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-slate-500 font-bold tracking-tighter">氏名:</span>
+                <span className="font-bold text-lg">{patientName} <small className="text-slate-400 font-normal ml-1">様</small></span>
+              </div>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-slate-500 font-bold tracking-tighter">受診日:</span>
+              <span className="font-bold text-lg">{receptionDate}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-y-1">
+            {questions.map((q, idx) => (
+              <div key={idx} className="py-2 border-b border-slate-100 flex gap-3 break-inside-avoid">
+                <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">
+                  {idx + 1}
+                </div>
+                <div className="flex-1">
+                  <div className="text-[14px] font-bold text-slate-800 mb-1 leading-snug">
+                    {q.label.split('\n').map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-x-6 gap-y-1">
+                    {q.options.filter(opt => opt !== "").map((opt, oidx) => (
+                      <div key={oidx} className="flex items-center gap-1.5">
+                        <div className={`w-4 h-4 border rounded flex items-center justify-center ${answers[idx] === opt ? 'border-slate-900 bg-slate-900' : 'border-slate-300'}`}>
+                          {answers[idx] === opt && (
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={`text-[13px] ${answers[idx] === opt ? 'font-bold text-slate-900' : 'text-slate-600'}`}>{opt}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-4 text-right text-slate-400 text-[10px]">
+            印刷日時: {new Date().toLocaleString('ja-JP')}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
