@@ -41,7 +41,8 @@ export default function PatientSearchDialog({
     setLoading(true);
     const { data, error } = await supabase
       .from("patient_basic")
-      .select("id, name, birthdate, sex");
+      .select("id, name, birthdate, sex")
+      .order("id", { ascending: true });
     if (!error && data) {
       setPatientList(data);
     } else {

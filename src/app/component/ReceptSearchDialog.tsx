@@ -106,7 +106,7 @@ export default function ReceptSearchDialog({
                   <tbody className="divide-y divide-slate-100">
                     {receptList.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center text-slate-400">受付データが見つかりませんでした</td>
+                        <td colSpan={4} className="px-6 py-12 text-center text-slate-400">検査受付がありません</td>
                       </tr>
                     ) : (
                       receptList.map((r) => (
