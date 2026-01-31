@@ -9,33 +9,9 @@ import { supabase } from "../../supabaseClient";
 
 export default function QuestionnairePage() {
   const searchParams = useSearchParams();
-  // 問診項目データ
-  const questions = [
-    { label: "a: 血圧を下げる薬の使用の有無", options: ["", "はい", "いいえ"] },
-    { label: "b: インスリン注射又は血糖を下げる薬の使用の有無", options: ["", "はい", "いいえ"] },
-    { label: "c: コレステロールを下げる薬の使用の有無", options: ["", "はい", "いいえ"] },
-    { label: "医師から、脳卒中(脳出血、脳梗塞等)にかかっているといわれたり、治療を受けたことがありますか。", options: ["", "はい", "いいえ"] },
-    { label: "医師から、心臓病(狭心症、心筋梗塞等)にかかっているといわれたり、治療を受けたことがありますか。", options: ["", "はい", "いいえ"] },
-    { label: "医師から、慢性の腎不全にかかっているといわれたり、治療(人口透析)を受けたことがありますか。", options: ["", "はい", "いいえ"] },
-    { label: "医師から、貧血といわれたことがある。", options: ["", "はい", "いいえ"] },
-    { label: "現在、たばこ習慣的に吸っている。", options: ["", "はい", "いいえ"] },
-    { label: "20歳の時から体重が10kg以上増加している。", options: ["", "はい", "いいえ"] },
-    { label: "1回30分以上の軽い汗をかく運動を週2回以上かつ1年以上実施。", options: ["", "はい", "いいえ"] },
-    { label: "日常生活において歩行又は同等の身体活動を1日1時間以上実施。", options: ["", "はい", "いいえ"] },
-    { label: "ほぼ同年齢の同性と比較して歩く速度が速い。", options: ["", "はい", "いいえ"] },
-    { label: "この1年間で体重が3kg以上あった。", options: ["", "はい", "いいえ"] },
-    { label: "人と比較して歩く速度が速い。", options: ["", "速い", "ふつう", "遅い"] },
-    { label: "就寝前の2時間以内に夕食をとることが週に3回以上ある。", options: ["", "はい", "いいえ"] },
-    { label: "夕食後に間食(3食以外の夜食)をとることが週に3回以上ある。", options: ["", "はい", "いいえ"] },
-    { label: "朝食を抜くことが週に3回以上ある。", options: ["", "はい", "いいえ"] },
-    { label: "お酒(焼酎・清酒・ビール・洋酒など)を飲む頻度。", options: ["", "毎日", "時々", "ほとんど飲まない(飲めない)"] },
-    { label: "飲酒日の1日当たりの飲酒量\n清酒1合(180ml)の目安:ビール中瓶1本(約500ml)、焼酎35度(80ml)、ウイスキーダブル1杯(60ml)、ワイン2杯(240ml)", options: ["", "1合未満", "1～2合未満", "2～3合未満", "3合以上"] },
-    { label: "睡眠で休養が十分とれている。", options: ["", "はい", "いいえ"] },
-    { label: "運動や食生活等の生活習慣を改善してみようとおもいますか", options: ["", "1:改善するつもりはない", "2:改善するつもりである(概ね6か月以内)", "3:近いうち(概ね1か月以内)改善するつもりであり、少しずつ始めている。", "4:既に改善に取り組んでいる(概ね6か月未満)", "5:既に改善に取り組んでいる(6か月以上)"] },
-    { label: "生活習慣の改善について保健指導を受ける機会があれば、利用しますか。", options: ["", "はい", "いいえ"] },
-  ];
-
-  const [answers, setAnswers] = useState(Array(questions.length).fill(""));
+  
+  const [questions, setQuestions] = useState<{ label: string; options: string[] }[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
   const [patientId, setPatientId] = useState("");
   const [patientName, setPatientName] = useState("");
   const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
@@ -53,6 +29,41 @@ export default function QuestionnairePage() {
     if (rId) setReceptionId(rId);
     if (rDate) setReceptionDate(rDate);
   }, [searchParams]);
+
+  useEffect(() => {
+    const fetchQuestionsAndAnswers = async () => {
+      const [qResult, aResult] = await Promise.all([
+        supabase
+          .from("monsin_question_content")
+          .select("content, answer_type")
+          .order("id", { ascending: true }),
+        supabase
+          .from("monsin_answer_content")
+          .select("type, content, answer_id")
+          .order("answer_id", { ascending: true })
+      ]);
+
+      if (!qResult.error && qResult.data && !aResult.error && aResult.data) {
+        // 回答タイプごとに選択肢をグループ化
+        const optionsMap: { [key: number]: string[] } = {};
+        aResult.data.forEach((a) => {
+          if (!optionsMap[a.type]) {
+            optionsMap[a.type] = [""]; // 未選択用の空文字
+          }
+          optionsMap[a.type].push(a.content);
+        });
+
+        const mappedQuestions = qResult.data.map((q) => ({
+          label: q.content,
+          options: optionsMap[q.answer_type] || [""],
+        }));
+
+        setQuestions(mappedQuestions);
+        setAnswers(new Array(mappedQuestions.length).fill(""));
+      }
+    };
+    fetchQuestionsAndAnswers();
+  }, []);
 
   const handleReceptSearch = async () => {
     if (!patientId) {
