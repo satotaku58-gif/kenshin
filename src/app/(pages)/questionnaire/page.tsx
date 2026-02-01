@@ -10,16 +10,19 @@ import { supabase } from "../../supabaseClient";
 export default function QuestionnairePage() {
   const searchParams = useSearchParams();
   
-  const [questions, setQuestions] = useState<{ label: string; options: string[] }[]>([]);
+  const [questions, setQuestions] = useState<{ id: number; label: string; options: { id: number; content: string }[] }[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const [patientId, setPatientId] = useState("");
   const [patientName, setPatientName] = useState("");
   const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
   const [receptionId, setReceptionId] = useState("");
+  const [receptInternalId, setReceptInternalId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [formErrors, setFormErrors] = useState<{ [key: number]: boolean }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     const pId = searchParams.get("patientId");
@@ -35,7 +38,7 @@ export default function QuestionnairePage() {
       const [qResult, aResult] = await Promise.all([
         supabase
           .from("monsin_question_content")
-          .select("content, answer_type")
+          .select("id, content, answer_type")
           .order("id", { ascending: true }),
         supabase
           .from("monsin_answer_content")
@@ -45,17 +48,18 @@ export default function QuestionnairePage() {
 
       if (!qResult.error && qResult.data && !aResult.error && aResult.data) {
         // 回答タイプごとに選択肢をグループ化
-        const optionsMap: { [key: number]: string[] } = {};
+        const optionsMap: { [key: number]: { id: number; content: string }[] } = {};
         aResult.data.forEach((a) => {
           if (!optionsMap[a.type]) {
-            optionsMap[a.type] = [""]; // 未選択用の空文字
+            optionsMap[a.type] = [];
           }
-          optionsMap[a.type].push(a.content);
+          optionsMap[a.type].push({ id: a.answer_id, content: a.content });
         });
 
         const mappedQuestions = qResult.data.map((q) => ({
+          id: q.id,
           label: q.content,
-          options: optionsMap[q.answer_type] || [""],
+          options: optionsMap[q.answer_type] || [],
         }));
 
         setQuestions(mappedQuestions);
@@ -116,6 +120,7 @@ export default function QuestionnairePage() {
       return;
     }
 
+    setReceptInternalId(receptData.id);
     setErrors({});
     setShowForm(true);
   };
@@ -124,6 +129,60 @@ export default function QuestionnairePage() {
     const newAnswers = [...answers];
     newAnswers[idx] = value;
     setAnswers(newAnswers);
+    if (value !== "") {
+      setFormErrors(prev => {
+        const next = { ...prev };
+        delete next[idx];
+        return next;
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    // 全体のエラーリセット
+    setSubmitError("");
+    
+    // 未回答チェック
+    const newFormErrors: { [key: number]: boolean } = {};
+    answers.forEach((a, idx) => {
+      if (a === "") {
+        newFormErrors[idx] = true;
+      }
+    });
+
+    if (Object.keys(newFormErrors).length > 0) {
+      setFormErrors(newFormErrors);
+      setSubmitError("未回答の項目があります。すべての質問に回答してから完了してください。");
+      return;
+    }
+
+    if (!receptInternalId) {
+      setSubmitError("受付データが正しく読み込まれていません。問診を最初からやり直してください。");
+      return;
+    }
+
+    // データの整形
+    const results = questions.map((q, idx) => ({
+      recept_id: receptInternalId,
+      question: q.id,
+      answer: parseInt(answers[idx])
+    }));
+
+    const { error } = await supabase
+      .from("monsin_answer_result")
+      .insert(results);
+
+    if (error) {
+      console.error("Error saving answers:", error);
+      setSubmitError("回答の保存中にエラーが発生しました。");
+    } else {
+      alert("回答を保存しました。");
+      // 入力フォームを閉じる、またはリセット
+      setShowForm(false);
+      setAnswers(new Array(questions.length).fill(""));
+      setFormErrors({});
+      setSubmitError("");
+    }
   };
 
   const handlePrint = () => {
@@ -322,34 +381,52 @@ export default function QuestionnairePage() {
                           ))}
                         </div>
                       </div>
-                      <div className="w-full sm:w-64 shrink-0">
+                      <div className="w-full sm:w-64 shrink-0 relative">
                         <select
-                          className="w-full border border-slate-200 rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700 appearance-none"
+                          className={`w-full border ${formErrors[idx] ? 'border-red-500 bg-red-50/30' : 'border-slate-200'} rounded-xl px-4 py-2.5 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none font-bold text-slate-700 appearance-none`}
                           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\' /%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem center', backgroundSize: '1rem' }}
                           value={answers[idx]}
                           onChange={e => handleChange(idx, e.target.value)}
                         >
                           <option value="">選択してください</option>
-                          {q.options.filter(opt => opt !== "").map((opt, oidx) => (
-                            <option key={oidx} value={opt}>{opt}</option>
+                          {q.options.map((opt, oidx) => (
+                            <option key={oidx} value={opt.id.toString()}>{opt.content}</option>
                           ))}
                         </select>
+                        {formErrors[idx] && (
+                          <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            回答を選択してください
+                            <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
                 </form>
               </div>
 
-              <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <div className="p-8 bg-slate-50 border-t border-slate-100 flex flex-col items-end gap-4">
                 <button
                   type="button"
+                  onClick={handleSubmit}
                   className="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl shadow-slate-200 hover:bg-emerald-600 hover:shadow-emerald-100 transition-all active:scale-95 flex items-center gap-2 group"
                 >
-                  <span>回答を一時保存する</span>
+                  <span>回答を完了する</span>
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                   </svg>
                 </button>
+                {submitError && (
+                  <div className="flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-xl border border-red-100 animate-in fade-in slide-in-from-top-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="font-bold text-sm">{submitError}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -394,16 +471,16 @@ export default function QuestionnairePage() {
                     ))}
                   </div>
                   <div className="flex flex-wrap gap-x-6 gap-y-1">
-                    {q.options.filter(opt => opt !== "").map((opt, oidx) => (
+                    {q.options.map((opt, oidx) => (
                       <div key={oidx} className="flex items-center gap-1.5">
-                        <div className={`w-4 h-4 border rounded flex items-center justify-center ${answers[idx] === opt ? 'border-slate-900 bg-slate-900' : 'border-slate-300'}`}>
-                          {answers[idx] === opt && (
+                        <div className={`w-4 h-4 border rounded flex items-center justify-center  'border-slate-300'}`}>
+                          {answers[idx] === opt.id.toString() && (
                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" />
                             </svg>
                           )}
                         </div>
-                        <span className={`text-[13px] ${answers[idx] === opt ? 'font-bold text-slate-900' : 'text-slate-600'}`}>{opt}</span>
+                        <span className={`text-[13px] 'text-slate-600'}`}>{opt.content}</span>
                       </div>
                     ))}
                   </div>
