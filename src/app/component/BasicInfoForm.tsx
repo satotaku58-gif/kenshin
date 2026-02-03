@@ -54,8 +54,15 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
     
     // 入力制限
     let newValue = value;
-    if (["zip", "tel"].includes(name)) {
-      // 郵便番号、電話番号：数字とハイフンのみ
+    if (name === "tel") {
+      // 電話番号：数字とハイフンのみ、かつハイフンを除いて最大11桁
+      newValue = value.replace(/[^0-9-]/g, "");
+      const digitsOnly = newValue.replace(/-/g, "");
+      if (digitsOnly.length > 11) {
+        return; // 11桁を超える場合は入力を無視
+      }
+    } else if (name === "zip") {
+      // 郵便番号：数字とハイフンのみ
       newValue = value.replace(/[^0-9-]/g, "");
     } else if (["insurerNumber", "insuredSymbol", "insuredNumber"].includes(name)) {
       // 保険者番号、記号、番号：数字のみ
@@ -75,11 +82,26 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
     const newErrors: { [key: string]: string } = {};
     if (!form.name) newErrors.name = "氏名を入力してください";
     if (!form.nameKana) newErrors.nameKana = "氏名（カナ）を入力してください";
-    if (!form.birth) newErrors.birth = "生年月日を選択してください";
-    if (!form.gender) newErrors.gender = "性別を選択してください";
-    if (!form.zip) newErrors.zip = "郵便番号を入力してください";
     if (!form.address) newErrors.address = "住所を入力してください";
     if (!form.tel) newErrors.tel = "電話番号を入力してください";
+
+    // メールアドレス形式チェック（任意項目だが入力があればチェック）
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = "有効なメールアドレスを入力してください";
+    }
+
+    if (!form.birth) {
+      newErrors.birth = "生年月日を選択してください";
+    } else {
+      // 未来日のチェック
+      const today = new Date().toISOString().split('T')[0];
+      if (form.birth > today) {
+        newErrors.birth = "未来の日付は選択できません";
+      }
+    }
+
+    if (!form.gender) newErrors.gender = "性別を選択してください";
+    if (!form.zip) newErrors.zip = "郵便番号を入力してください";
     if (!form.insurerNumber) newErrors.insurerNumber = "保険者番号を入力してください";
     if (!form.insuredSymbol) newErrors.insuredSymbol = "記号を入力してください";
     if (!form.insuredNumber) newErrors.insuredNumber = "番号を入力してください";
@@ -225,6 +247,7 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
                     type="date" 
                     value={form.birth} 
                     onChange={handleChange} 
+                    max={new Date().toISOString().split('T')[0]}
                     className={`w-full border ${errors.birth ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
                   />
                   {errors.birth && (
@@ -325,6 +348,27 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
                     {errors.tel}
+                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-bold text-slate-700 mb-2">メールアドレス</label>
+                <input 
+                  name="email" 
+                  type="email"
+                  value={form.email} 
+                  onChange={handleChange} 
+                  className={`w-full border ${errors.email ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 transition-all outline-none bg-slate-50/30 font-medium`} 
+                  placeholder="example@test.com" 
+                />
+                {errors.email && (
+                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.email}
                     <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
                   </div>
                 )}
