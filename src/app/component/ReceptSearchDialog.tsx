@@ -15,6 +15,7 @@ interface ReceptSearchDialogProps {
   onClose: () => void;
   onSelect: (reception: Reception) => void;
   patientId: string;
+  themeColor?: "blue" | "emerald" | "cyan" | "amber";
 }
 
 export default function ReceptSearchDialog({
@@ -22,6 +23,7 @@ export default function ReceptSearchDialog({
   onClose,
   onSelect,
   patientId,
+  themeColor = "emerald",
 }: ReceptSearchDialogProps) {
   const [receptList, setReceptList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,12 +66,17 @@ export default function ReceptSearchDialog({
 
   if (!isOpen) return null;
 
+  const bgColor = themeColor === "cyan" ? "bg-cyan-600" : themeColor === "emerald" ? "bg-emerald-600" : themeColor === "amber" ? "bg-amber-600" : "bg-blue-600";
+  const hoverColor = themeColor === "cyan" ? "hover:bg-cyan-700" : themeColor === "emerald" ? "hover:bg-emerald-700" : themeColor === "amber" ? "hover:bg-amber-700" : "hover:bg-blue-700";
+  const spinnerBorder = themeColor === "cyan" ? "border-t-cyan-600" : themeColor === "emerald" ? "border-t-emerald-600" : themeColor === "amber" ? "border-t-amber-600" : "border-t-blue-600";
+  const monoColor = themeColor === "cyan" ? "text-cyan-600" : themeColor === "emerald" ? "text-emerald-600" : themeColor === "amber" ? "text-amber-600" : "text-blue-600";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
+            <div className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center text-white`}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
               </svg>
@@ -88,7 +95,7 @@ export default function ReceptSearchDialog({
         <div className="p-6">
           {loading ? (
             <div className="flex flex-col items-center py-12 text-slate-400">
-              <div className="w-10 h-10 border-4 border-slate-100 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
+              <div className={`w-10 h-10 border-4 border-slate-100 ${spinnerBorder} rounded-full animate-spin mb-4`}></div>
               <p>データを読み込み中...</p>
             </div>
           ) : (
@@ -111,7 +118,7 @@ export default function ReceptSearchDialog({
                     ) : (
                       receptList.map((r) => (
                         <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-6 py-4 font-mono text-emerald-600 font-bold">{r.recept_id}</td>
+                          <td className={`px-6 py-4 font-mono ${monoColor} font-bold`}>{r.recept_id}</td>
                           <td className="px-6 py-4 text-slate-700 font-medium">{r.recept_date}</td>
                           <td className="px-6 py-4">
                             <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">
@@ -120,7 +127,7 @@ export default function ReceptSearchDialog({
                           </td>
                           <td className="px-6 py-4 text-right">
                             <button
-                              className="bg-emerald-600 text-white px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm"
+                              className={`${bgColor} text-white px-4 py-1.5 rounded-lg font-bold text-sm ${hoverColor} transition-colors shadow-sm`}
                               onClick={() => onSelect(r)}
                             >
                               選択
