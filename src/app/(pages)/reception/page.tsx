@@ -1,6 +1,7 @@
 "use client";
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
+import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
@@ -37,15 +38,6 @@ export default function ReceptionPage() {
   const [receptDate, setReceptDate] = useState(new Date().toISOString().split('T')[0]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  useEffect(() => {
-    const pId = searchParams.get("patientId");
-    if (pId) {
-      setPatientId(pId);
-      // 自動的に患者情報を取得する処理を呼び出す
-      fetchPatientInfo(pId);
-    }
-  }, [searchParams]);
-
   const fetchPatientInfo = async (id: string) => {
     if (!id) return;
     const { data, error } = await supabase
@@ -60,6 +52,15 @@ export default function ReceptionPage() {
       setPatientInfo(data);
     }
   };
+
+  useEffect(() => {
+    const pId = searchParams.get("patientId");
+    if (pId) {
+      setPatientId(pId);
+      // 自動的に患者情報を取得する処理を呼び出す
+      fetchPatientInfo(pId);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // 検査コース一覧をSupabaseから取得
@@ -167,19 +168,18 @@ export default function ReceptionPage() {
 
           {showDialog ? null : (
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-800">検査受付入力</h2>
-                    <p className="text-sm text-slate-500">受診される方のIDを入力または検索して、コースを選択してください。</p>
-                  </div>
-                </div>
-
+              <ReceptStartForm
+                title="検査受付入力"
+                description="受診される方のIDを入力または検索して、コースを選択してください。"
+                icon={
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                }
+                onSubmit={handleBlur}
+                submitLabel="患者IDを確認する"
+                themeColor="blue"
+              >
                 <div className="flex flex-col sm:flex-row items-end gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                   <div className="flex-1 w-full relative">
                     <label className="block text-sm font-bold text-slate-600 mb-2">患者ID検索</label>
@@ -212,22 +212,16 @@ export default function ReceptionPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      className="flex-1 sm:flex-none bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 active:scale-95"
-                      onClick={handleBlur}
-                    >
-                      IDで確定
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 sm:flex-none border border-slate-200 bg-white text-slate-600 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all active:scale-95"
-                      onClick={() => setShowDialog(true)}
-                    >
-                      一覧から検索
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="w-full sm:w-auto border border-slate-200 bg-white text-slate-600 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-2"
+                    onClick={() => setShowDialog(true)}
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    一覧から検索
+                  </button>
                 </div>
 
                 {searchError && (
@@ -238,7 +232,7 @@ export default function ReceptionPage() {
                     {searchError}
                   </div>
                 )}
-              </div>
+              </ReceptStartForm>
 
               {patientInfo && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in slide-in-from-bottom duration-500">
