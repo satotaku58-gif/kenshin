@@ -177,7 +177,7 @@ export default function ReceptionPage() {
                   </svg>
                 }
                 onSubmit={handleBlur}
-                submitLabel="患者IDを確認する"
+                submitLabel="受付を開始する"
                 themeColor="blue"
               >
                 <div className="flex flex-col sm:flex-row items-end gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-100">
