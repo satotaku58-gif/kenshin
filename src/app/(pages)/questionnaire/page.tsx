@@ -4,12 +4,12 @@ import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
 
-export default function QuestionnairePage() {
+function QuestionnaireContent() {
   const searchParams = useSearchParams();
   const {
     patientId, setPatientId,
@@ -502,5 +502,13 @@ export default function QuestionnairePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function QuestionnairePage() {
+  return (
+    <Suspense fallback={<div>読み込み中...</div>}>
+      <QuestionnaireContent />
+    </Suspense>
   );
 }

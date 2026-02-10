@@ -4,11 +4,11 @@ import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 
-export default function ResultsInputPage() {
+function ResultsInputContent() {
   const searchParams = useSearchParams();
 
   const [patientId, setPatientId] = useState("");
@@ -420,5 +420,13 @@ export default function ResultsInputPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ResultsInputPage() {
+  return (
+    <Suspense fallback={<div>読み込み中...</div>}>
+      <ResultsInputContent />
+    </Suspense>
   );
 }

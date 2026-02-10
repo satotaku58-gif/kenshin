@@ -2,11 +2,11 @@
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 
-export default function ReceptionPage() {
+function ReceptionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // 性別コードを日本語に変換
@@ -337,5 +337,13 @@ export default function ReceptionPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function ReceptionPage() {
+  return (
+    <Suspense fallback={<div>読み込み中...</div>}>
+      <ReceptionContent />
+    </Suspense>
   );
 }
