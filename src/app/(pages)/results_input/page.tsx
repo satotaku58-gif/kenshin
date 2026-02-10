@@ -94,22 +94,122 @@ export default function ResultsInputPage() {
 
     const itemIds = courseItems.map(ci => ci.item_id);
 
-    // 3. 検査項目のマスター情報を取得
-    const { data: itemMaster, error: itemMasterError } = await supabase
+    // 3. 検査項目のマスター情報と、リレーション先のデータ型・選択肢を取得
+    const { data: itemMaster, error: itemError } = await supabase
       .from("kensa_item_master")
-      .select("*")
+      .select(`
+        *,
+        valuetype_info:kensa_valuetype_master (
+          id,
+          name,
+          selectable,
+          kensa_select_item_master (
+            id,
+            text
+          )
+        )
+      `)
       .in("id", itemIds)
       .order("id", { ascending: true });
 
-    if (itemMasterError || !itemMaster) {
-      console.error("Item master fetch error:", itemMasterError);
-      setErrors({ receptionId: "検査項目マスターを読み取れませんでした" });
+    if (itemError || !itemMaster) {
+      console.error("Master fetch error:", itemError);
+      setErrors({ receptionId: "マスター情報を読み取れませんでした" });
       return;
     }
 
-    setExaminationItems(itemMaster);
+    // 取得したデータを使いやすい形式に整形
+    const itemsWithTypes = itemMaster.map((item: any) => {
+      const typeInfo = item.valuetype_info;
+      const isSelectable = typeInfo?.selectable || false;
+      const options = isSelectable ? (typeInfo?.kensa_select_item_master || []) : [];
+
+      return {
+        ...item,
+        typeName: typeInfo?.name || "unknown",
+        isSelectable,
+        options
+      };
+    });
+
+    setExaminationItems(itemsWithTypes);
     setErrors({});
     setShowForm(true);
+  };
+
+  const handleInputChange = (itemId: number, value: string, type: string, isSelectable: boolean) => {
+    // 選択式の場合はバリデーション不要（そのままセット）
+    if (isSelectable) {
+      setExaminationItems(prev => prev.map(item => 
+        item.id === itemId ? { ...item, value } : item
+      ));
+      return;
+    }
+
+    // データ型に応じたバリデーション
+    let filteredValue = value;
+    if (type === "int") {
+      filteredValue = value.replace(/[^0-9]/g, "");
+    } else if (type === "float") {
+      filteredValue = value.replace(/[^0-9.]/g, "");
+      const parts = filteredValue.split(".");
+      if (parts.length > 2) {
+        filteredValue = parts[0] + "." + parts.slice(1).join("");
+      }
+    } else if (type === "bool") {
+      // boolの場合は別途セレクトボックスにするが、ここでも通る可能性を考慮
+      filteredValue = value;
+    }
+    
+    setExaminationItems(prev => prev.map(item => 
+      item.id === itemId ? { ...item, value: filteredValue } : item
+    ));
+  };
+
+  const renderInput = (item: any) => {
+    const { typeName, id, value = "", isSelectable, options } = item;
+
+    // 選択式の場合 (selectable=true)
+    if (isSelectable) {
+      return (
+        <select
+          value={value}
+          onChange={(e) => handleInputChange(id, e.target.value, typeName, true)}
+          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none font-bold text-slate-700 text-sm"
+        >
+          <option value="">選択してください</option>
+          {options.map((opt: any) => (
+            <option key={opt.id} value={opt.text}>{opt.text}</option>
+          ))}
+        </select>
+      );
+    }
+
+    // 非選択式で bool の場合
+    if (typeName === "bool") {
+      return (
+        <select
+          value={value}
+          onChange={(e) => handleInputChange(id, e.target.value, typeName, false)}
+          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none font-bold text-slate-700 text-sm"
+        >
+          <option value="">選択</option>
+          <option value="はい">はい</option>
+          <option value="いいえ">いいえ</option>
+        </select>
+      );
+    }
+
+    // それ以外 (int, float, text など)
+    return (
+      <input
+        type="text"
+        placeholder="入力"
+        value={value}
+        onChange={(e) => handleInputChange(id, e.target.value, typeName, false)}
+        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none font-bold text-slate-700 text-sm text-right"
+      />
+    );
   };
 
   return (
@@ -269,17 +369,13 @@ export default function ResultsInputPage() {
                   <thead>
                     <tr className="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider">
                       <th className="px-6 py-4">項目名</th>
-                      <th className="px-6 py-4">略記</th>
-                      <th className="px-6 py-4">単位</th>
-                      <th className="px-6 py-4">基準値 (下限)</th>
-                      <th className="px-6 py-4">基準値 (上限)</th>
-                      <th className="px-6 py-4">入力値</th>
+                      <th className="px-6 py-4">結果</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {examinationItems.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
+                        <td colSpan={2} className="px-6 py-12 text-center text-slate-400 font-medium">
                           表示できる検査項目がありません。
                         </td>
                       </tr>
@@ -289,16 +385,17 @@ export default function ResultsInputPage() {
                           <td className="px-6 py-4">
                             <div className="text-sm font-bold text-slate-700">{item.name}</div>
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-500 font-mono">{item.abbrev || "-"}</td>
-                          <td className="px-6 py-4 text-sm text-slate-500">{item.unit || "-"}</td>
-                          <td className="px-6 py-4 text-sm text-slate-500 font-mono">{item.min_val ?? "-"}</td>
-                          <td className="px-6 py-4 text-sm text-slate-500 font-mono">{item.max_val ?? "-"}</td>
                           <td className="px-6 py-4">
-                            <input
-                              type="text"
-                              placeholder="入力"
-                              className="w-24 px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none font-bold text-slate-700 text-sm"
-                            />
+                            <div className="flex items-center gap-2 justify-start">
+                              <div className="w-48 flex items-center gap-2">
+                                {renderInput(item)}
+                              </div>
+                              <div className="w-16">
+                                {item.unit && (
+                                  <span className="text-sm text-slate-500 font-medium">{item.unit}</span>
+                                )}
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       ))
