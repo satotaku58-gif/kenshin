@@ -105,6 +105,12 @@ export default function QuestionnairePage() {
       return;
     }
 
+    // 問診開始時に回答内容と内部IDをリセット
+    setAnswers(new Array(questions.length).fill(""));
+    setReceptInternalId(null);
+    setFormErrors({});
+    setSubmitError("");
+
     // 患者存在チェック
     const { data: patientData, error: patientError } = await supabase
       .from("patient_basic")
