@@ -7,18 +7,22 @@ import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
+import { useQuestionnaire } from "../../context/QuestionnaireContext";
 
 export default function QuestionnairePage() {
   const searchParams = useSearchParams();
+  const {
+    patientId, setPatientId,
+    patientName, setPatientName,
+    receptionDate, setReceptionDate,
+    receptionId, setReceptionId,
+    receptInternalId, setReceptInternalId,
+    answers, setAnswers,
+    showForm, setShowForm,
+    resetState, isLoaded
+  } = useQuestionnaire();
   
   const [questions, setQuestions] = useState<{ id: number; label: string; options: { id: number; content: string }[] }[]>([]);
-  const [answers, setAnswers] = useState<string[]>([]);
-  const [patientId, setPatientId] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
-  const [receptionId, setReceptionId] = useState("");
-  const [receptInternalId, setReceptInternalId] = useState<number | null>(null);
-  const [showForm, setShowForm] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [formErrors, setFormErrors] = useState<{ [key: number]: boolean }>({});
   const [showDialog, setShowDialog] = useState(false);
@@ -26,15 +30,19 @@ export default function QuestionnairePage() {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     const pId = searchParams.get("patientId");
     const rId = searchParams.get("receptId");
     const rDate = searchParams.get("receptDate");
     if (pId) setPatientId(pId);
     if (rId) setReceptionId(rId);
     if (rDate) setReceptionDate(rDate);
-  }, [searchParams]);
+  }, [searchParams, isLoaded]);
 
   useEffect(() => {
+    if (!isLoaded) return;
+
     const fetchQuestionsAndAnswers = async () => {
       const [qResult, aResult] = await Promise.all([
         supabase
@@ -64,11 +72,17 @@ export default function QuestionnairePage() {
         }));
 
         setQuestions(mappedQuestions);
-        setAnswers(new Array(mappedQuestions.length).fill(""));
+        // 既存の回答がない場合、または設問数に変更があった場合のみ初期化
+        setAnswers(prev => {
+          if (prev.length !== mappedQuestions.length) {
+            return new Array(mappedQuestions.length).fill("");
+          }
+          return prev;
+        });
       }
     };
     fetchQuestionsAndAnswers();
-  }, []);
+  }, [isLoaded]);
 
   const handleReceptSearch = async () => {
     if (!patientId) {
