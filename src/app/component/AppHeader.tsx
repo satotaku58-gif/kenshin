@@ -1,11 +1,18 @@
 "use client";
 import React, { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
 const AppHeader = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push('/login');
+    router.refresh();
+  };
 
   const navItems = [
     { name: "患者情報入力", path: "/patient_basic" },
@@ -48,12 +55,17 @@ const AppHeader = () => {
               </li>
             );
           })}
+          <li className="ml-4">
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 rounded-lg text-[13px] font-bold text-red-500 hover:bg-red-50 transition-all duration-200"
+            >
+              ログアウト
+            </button>
+          </li>
         </ul>
 
         <div className="flex items-center gap-3">
-          <button className="hidden lg:flex px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-            ログアウト
-          </button>
           <button 
             className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -92,7 +104,10 @@ const AppHeader = () => {
               );
             })}
             <li className="mt-2 pt-2 border-t border-slate-50">
-              <button className="w-full px-4 py-3 text-sm font-bold text-left text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+              <button
+                onClick={handleLogout}
+                className="w-full px-4 py-3 text-sm font-bold text-left text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              >
                 ログアウト
               </button>
             </li>
