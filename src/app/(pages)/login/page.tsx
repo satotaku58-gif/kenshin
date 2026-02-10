@@ -14,8 +14,8 @@ export default function LoginPage() {
 
     // 簡易的な認証チェック
     if (id === 'satotaku58' && password === 'sd8act') {
-      // クッキーにログイン情報を保存 (1日間有効)
-      document.cookie = "auth_token=authenticated; path=/; max-age=86400; samesite=lax";
+      // LocalStorageにログイン情報を保存
+      localStorage.setItem('auth_token', 'authenticated');
       router.push('/patient_basic');
       router.refresh();
     } else {

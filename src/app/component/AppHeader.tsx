@@ -9,7 +9,7 @@ const AppHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
-    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    localStorage.removeItem('auth_token');
     router.push('/login');
     router.refresh();
   };

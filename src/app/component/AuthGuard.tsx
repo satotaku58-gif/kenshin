@@ -9,10 +9,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // クッキーから認証情報を取得
-    const cookies = document.cookie.split('; ');
-    const authToken = cookies.find(row => row.startsWith('auth_token='));
-    const isAuth = authToken?.split('=')[1] === 'authenticated';
+    // LocalStorageから認証情報を取得
+    const isAuth = typeof window !== 'undefined' && localStorage.getItem('auth_token') === 'authenticated';
 
     if (pathname === '/login') {
       if (isAuth) {
@@ -20,6 +18,16 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         router.push('/patient_basic');
       } else {
         setIsAuthenticated(false);
+      }
+      return;
+    }
+
+    // ルートパス（/）へのアクセス時
+    if (pathname === '/') {
+      if (isAuth) {
+        router.push('/patient_basic');
+      } else {
+        router.push('/login');
       }
       return;
     }
@@ -33,8 +41,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router]);
 
-  // 判定中、または未ログイン（リダイレクト前）は何も表示しない（またはローディング）
-  if (pathname !== '/login' && isAuthenticated === false) {
+  // 判定中、または未ログイン（リダイレクト前）は何も表示しない
+  if (isAuthenticated === false && pathname !== '/login') {
     return null;
   }
 
