@@ -16,8 +16,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     if (pathname === '/login') {
       if (isAuth) {
-        // ログイン済みでログインページにアクセスした場合はTOPへ
-        router.push('/');
+        // ログイン済みでログインページにアクセスした場合は患者情報入力へ
+        router.push('/patient_basic');
       } else {
         setIsAuthenticated(false);
       }
