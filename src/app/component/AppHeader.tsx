@@ -12,6 +12,7 @@ const AppHeader = () => {
     { name: "検査受付入力", path: "/reception" },
     { name: "問診入力", path: "/questionnaire" },
     { name: "検査結果入力", path: "/results_input" },
+    { name: "検査結果表示", path: "/results_output" },
   ];
 
   return (
