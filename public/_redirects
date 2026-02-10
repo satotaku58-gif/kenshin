@@ -1,1 +1,2 @@
-/  /patient_basic  302
+# Cloudflare Pages redirects
+# Removed automatic redirect to /patient_basic as it conflicts with AuthGuard
