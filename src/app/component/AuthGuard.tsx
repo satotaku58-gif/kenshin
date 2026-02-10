@@ -12,30 +12,32 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     // LocalStorageから認証情報を取得
     const isAuth = typeof window !== 'undefined' && localStorage.getItem('auth_token') === 'authenticated';
 
+    // 1. ログインページへのアクセス
     if (pathname === '/login') {
       if (isAuth) {
-        // ログイン済みでログインページにアクセスした場合は患者情報入力へ
-        router.push('/patient_basic');
+        // ログイン済みなら患者情報入力へ
+        router.replace('/patient_basic');
       } else {
         setIsAuthenticated(false);
       }
       return;
     }
 
-    // ルートパス（/）へのアクセス時
+    // 2. ルートパス (/) へのアクセス
     if (pathname === '/') {
       if (isAuth) {
-        router.push('/patient_basic');
+        router.replace('/patient_basic');
       } else {
-        router.push('/login');
+        router.replace('/login');
       }
       return;
     }
 
+    // 3. その他の保護されたページへのアクセス
     if (!isAuth) {
-      // 未ログインの場合はログインページへリダイレクト
+      // 未ログインならログインページへリダイレクト
       setIsAuthenticated(false);
-      router.push('/login');
+      router.replace('/login');
     } else {
       setIsAuthenticated(true);
     }
