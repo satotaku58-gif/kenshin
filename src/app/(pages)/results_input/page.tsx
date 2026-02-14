@@ -15,11 +15,14 @@ function ResultsInputContent() {
   const [patientName, setPatientName] = useState("");
   const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
   const [receptionId, setReceptionId] = useState("");
+  const [receptPk, setReceptPk] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [examinationItems, setExaminationItems] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ text: string, type: 'success' | 'error' | '' }>({ text: "", type: "" });
 
   useEffect(() => {
     const pId = searchParams.get("patientId");
@@ -79,6 +82,8 @@ function ResultsInputContent() {
       setShowForm(false);
       return;
     }
+
+    setReceptPk(receptData.id);
 
     // 2. コースに紐づく検査項目を取得
     const { data: courseItems, error: courseItemsError } = await supabase
@@ -166,6 +171,44 @@ function ResultsInputContent() {
     ));
   };
 
+  const handleSave = async () => {
+    if (!receptPk) return;
+    
+    setIsSaving(true);
+    setSaveMessage({ text: "", type: "" });
+
+    try {
+      // 保存するデータの抽出（値があるもののみ、数値を数値として送信）
+      const resultsToSave = examinationItems
+        .filter(item => item.value !== undefined && item.value !== "")
+        .map(item => ({
+          recept_id: receptPk,
+          kensa_item: item.id,
+          answer: parseInt(item.value, 10)
+        }));
+
+      if (resultsToSave.length === 0) {
+        setSaveMessage({ text: "保存するデータがありません。", type: "error" });
+        setIsSaving(false);
+        return;
+      }
+
+      // kensa_result テーブルへ保存 (upsertを使用)
+      const { error } = await supabase
+        .from("kensa_result")
+        .upsert(resultsToSave, { onConflict: "recept_id,kensa_item" });
+
+      if (error) throw error;
+
+      setSaveMessage({ text: "検査結果を保存しました。", type: "success" });
+    } catch (err: any) {
+      console.error("Save error:", err);
+      setSaveMessage({ text: "エラーが発生しました。保存できませんでした。", type: "error" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const renderInput = (item: any) => {
     const { typeName, id, value = "", isSelectable, options } = item;
 
@@ -178,8 +221,8 @@ function ResultsInputContent() {
           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none font-bold text-slate-700 text-sm"
         >
           <option value="">選択してください</option>
-          {options.map((opt: any) => (
-            <option key={opt.id} value={opt.text}>{opt.text}</option>
+          {options.map((opt: any, index: number) => (
+            <option key={opt.id} value={index}>{opt.text}</option>
           ))}
         </select>
       );
@@ -194,8 +237,8 @@ function ResultsInputContent() {
           className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all outline-none font-bold text-slate-700 text-sm"
         >
           <option value="">選択</option>
-          <option value="はい">はい</option>
-          <option value="いいえ">いいえ</option>
+          <option value="1">はい</option>
+          <option value="0">いいえ</option>
         </select>
       );
     }
@@ -404,15 +447,26 @@ function ResultsInputContent() {
                 </table>
               </div>
 
-              <div className="mt-8 flex justify-end">
+              <div className="mt-8 flex justify-end items-center gap-4">
+                {saveMessage.text && (
+                  <span className={`text-sm font-bold ${saveMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                    {saveMessage.text}
+                  </span>
+                )}
                 <button
                   type="button"
-                  className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-200 hover:bg-amber-600 hover:shadow-amber-100 transition-all active:scale-95 flex items-center gap-2 group"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-8 py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-200 hover:bg-amber-600 hover:shadow-amber-100 transition-all active:scale-95 flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg className={`w-5 h-5 ${isSaving ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isSaving ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    )}
                   </svg>
-                  <span>検査結果を保存する</span>
+                  <span>{isSaving ? "保存中..." : "検査結果を保存する"}</span>
                 </button>
               </div>
             </div>
