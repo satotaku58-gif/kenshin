@@ -7,17 +7,21 @@ import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
+import { useResultsInput } from "../../context/ResultsInputContext";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
+  const {
+    patientId, setPatientId,
+    patientName, setPatientName,
+    receptionDate, setReceptionDate,
+    receptionId, setReceptionId,
+    receptPk, setReceptPk,
+    examinationItems, setExaminationItems,
+    showForm, setShowForm,
+    isLoaded
+  } = useResultsInput();
 
-  const [patientId, setPatientId] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
-  const [receptionId, setReceptionId] = useState("");
-  const [receptPk, setReceptPk] = useState<number | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  const [examinationItems, setExaminationItems] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
@@ -25,13 +29,14 @@ function ResultsInputContent() {
   const [saveMessage, setSaveMessage] = useState<{ text: string, type: 'success' | 'error' | '' }>({ text: "", type: "" });
 
   useEffect(() => {
+    if (!isLoaded) return;
     const pId = searchParams.get("patientId");
     const rId = searchParams.get("receptId");
     const rDate = searchParams.get("receptDate");
     if (pId) setPatientId(pId);
     if (rId) setReceptionId(rId);
     if (rDate) setReceptionDate(rDate);
-  }, [searchParams]);
+  }, [searchParams, isLoaded]);
 
   const handleReceptSearch = async () => {
     if (!patientId) {

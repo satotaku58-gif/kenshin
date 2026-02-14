@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QuestionnaireProvider } from "./context/QuestionnaireContext";
+import { ResultsInputProvider } from "./context/ResultsInputContext";
 import AuthGuard from "./component/AuthGuard";
 
 const geistSans = Geist({
@@ -31,7 +32,9 @@ export default function RootLayout({
       >
         <AuthGuard>
           <QuestionnaireProvider>
-            {children}
+            <ResultsInputProvider>
+              {children}
+            </ResultsInputProvider>
           </QuestionnaireProvider>
         </AuthGuard>
       </body>
