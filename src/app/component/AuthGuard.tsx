@@ -45,7 +45,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [pathname, router]);
 
   // 判定中、または未ログイン（リダイレクト前）は何も表示しない
-  if (isAuthenticated === false && pathname !== '/login') {
+  if (isAuthenticated === null || (isAuthenticated === false && pathname !== '/login')) {
     return null;
   }
 
