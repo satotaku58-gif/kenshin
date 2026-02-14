@@ -123,17 +123,38 @@ function ResultsInputContent() {
       return;
     }
 
+    // 4. すでに保存されている結果があれば取得
+    const { data: existingResults, error: resultsError } = await supabase
+      .from("kensa_result")
+      .select("kensa_item, answer")
+      .eq("recept_id", receptData.id);
+
+    if (resultsError) {
+      console.error("Existing results fetch error:", resultsError);
+      // 結果の取得失敗は致命的ではないので続行
+    }
+
+    const resultsMap = new Map();
+    existingResults?.forEach(r => {
+      resultsMap.set(r.kensa_item, r.answer);
+    });
+
     // 取得したデータを使いやすい形式に整形
     const itemsWithTypes = itemMaster.map((item: any) => {
       const typeInfo = item.valuetype_info;
       const isSelectable = typeInfo?.selectable || false;
       const options = isSelectable ? (typeInfo?.kensa_select_item_master || []) : [];
+      
+      // 保存済みの値があればセット
+      const existingValue = resultsMap.get(item.id);
 
       return {
         ...item,
         typeName: typeInfo?.name || "unknown",
         isSelectable,
-        options
+        options,
+        value: existingValue !== undefined ? existingValue.toString() : "",
+        isExisting: existingValue !== undefined
       };
     });
 
@@ -184,7 +205,7 @@ function ResultsInputContent() {
         .map(item => ({
           recept_id: receptPk,
           kensa_item: item.id,
-          answer: parseInt(item.value, 10)
+          answer: parseFloat(item.value)
         }));
 
       if (resultsToSave.length === 0) {
@@ -433,11 +454,19 @@ function ResultsInputContent() {
                               <div className="w-48 flex items-center gap-2">
                                 {renderInput(item)}
                               </div>
-                              <div className="w-16">
+                              <div className="w-20">
                                 {item.unit && (
                                   <span className="text-sm text-slate-500 font-medium">{item.unit}</span>
                                 )}
                               </div>
+                              {item.isExisting && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 border border-green-100 rounded-lg animate-in fade-in zoom-in duration-300">
+                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="text-[11px] font-bold whitespace-nowrap">入力済み</span>
+                                </div>
+                              )}
                             </div>
                           </td>
                         </tr>
