@@ -347,7 +347,7 @@ function QuestionnaireContent() {
             </div>
           </ReceptStartForm>
 
-          {showForm && (
+          {showForm ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="p-8 border-b border-slate-100 bg-emerald-50/30">
                 <div className="flex items-center justify-between gap-4">
@@ -435,6 +435,15 @@ function QuestionnaireContent() {
                   </div>
                 )}
               </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-slate-500 font-medium">患者IDと受付IDを入力して「問診入力を開始する」をクリックしてください。</p>
             </div>
           )}
         </div>
