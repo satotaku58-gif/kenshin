@@ -8,7 +8,7 @@ interface ReceptStartFormProps {
   children: React.ReactNode;
   onSubmit: () => void;
   submitLabel: string;
-  themeColor?: "emerald" | "blue" | "cyan" | "amber" | "slate";
+  themeColor?: "emerald" | "blue" | "cyan" | "amber" | "yellow" | "slate";
 }
 
 const ReceptStartForm = ({
@@ -48,6 +48,13 @@ const ReceptStartForm = ({
       btnBg: "bg-amber-600",
       btnHover: "hover:bg-amber-700",
       btnShadow: "shadow-amber-100",
+    },
+    yellow: {
+      iconBg: "bg-yellow-100",
+      iconText: "text-yellow-600",
+      btnBg: "bg-yellow-500",
+      btnHover: "hover:bg-yellow-600",
+      btnShadow: "shadow-yellow-100",
     },
     slate: {
       iconBg: "bg-slate-100",

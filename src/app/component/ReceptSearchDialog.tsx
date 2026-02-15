@@ -15,7 +15,7 @@ interface ReceptSearchDialogProps {
   onClose: () => void;
   onSelect: (reception: Reception) => void;
   patientId: string;
-  themeColor?: "blue" | "emerald" | "cyan" | "amber";
+  themeColor?: "blue" | "emerald" | "cyan" | "amber" | "yellow";
 }
 
 export default function ReceptSearchDialog({
@@ -66,10 +66,10 @@ export default function ReceptSearchDialog({
 
   if (!isOpen) return null;
 
-  const bgColor = themeColor === "cyan" ? "bg-cyan-600" : themeColor === "emerald" ? "bg-emerald-600" : themeColor === "amber" ? "bg-amber-600" : "bg-blue-600";
-  const hoverColor = themeColor === "cyan" ? "hover:bg-cyan-700" : themeColor === "emerald" ? "hover:bg-emerald-700" : themeColor === "amber" ? "hover:bg-amber-700" : "hover:bg-blue-700";
-  const spinnerBorder = themeColor === "cyan" ? "border-t-cyan-600" : themeColor === "emerald" ? "border-t-emerald-600" : themeColor === "amber" ? "border-t-amber-600" : "border-t-blue-600";
-  const monoColor = themeColor === "cyan" ? "text-cyan-600" : themeColor === "emerald" ? "text-emerald-600" : themeColor === "amber" ? "text-amber-600" : "text-blue-600";
+  const bgColor = themeColor === "cyan" ? "bg-cyan-600" : themeColor === "emerald" ? "bg-emerald-600" : themeColor === "amber" ? "bg-amber-600" : themeColor === "yellow" ? "bg-yellow-500" : "bg-blue-600";
+  const hoverColor = themeColor === "cyan" ? "hover:bg-cyan-700" : themeColor === "emerald" ? "hover:bg-emerald-700" : themeColor === "amber" ? "hover:bg-amber-700" : themeColor === "yellow" ? "hover:bg-yellow-600" : "hover:bg-blue-700";
+  const spinnerBorder = themeColor === "cyan" ? "border-t-cyan-600" : themeColor === "emerald" ? "border-t-emerald-600" : themeColor === "amber" ? "border-t-amber-600" : themeColor === "yellow" ? "border-t-yellow-500" : "border-t-blue-600";
+  const monoColor = themeColor === "cyan" ? "text-cyan-600" : themeColor === "emerald" ? "text-emerald-600" : themeColor === "amber" ? "text-amber-600" : themeColor === "yellow" ? "text-yellow-600" : "text-blue-600";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">

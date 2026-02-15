@@ -162,7 +162,7 @@ function ResultsOutputContent() {
               if (errors.patientId) setErrors((prev) => ({ ...prev, patientId: "" }));
               setShowDialog(false);
             }}
-            themeColor="blue"
+            themeColor="yellow"
           />
 
           <ReceptSearchDialog
@@ -176,7 +176,7 @@ function ResultsOutputContent() {
               setShowReceptDialog(false);
             }}
             patientId={patientId}
-            themeColor="blue"
+            themeColor="yellow"
           />
 
           <ReceptStartForm
@@ -189,7 +189,7 @@ function ResultsOutputContent() {
             }
             onSubmit={handleStart}
             submitLabel="結果を表示する"
-            themeColor="blue"
+            themeColor="yellow"
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <div className="relative">
@@ -198,7 +198,7 @@ function ResultsOutputContent() {
                   <input
                     type="text"
                     placeholder="例: 1001"
-                    className={`flex-1 px-4 py-3 bg-slate-50/50 border ${errors.patientId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-slate-700`}
+                    className={`flex-1 px-4 py-3 bg-slate-50/50 border ${errors.patientId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all outline-none font-bold text-slate-700`}
                     value={patientId}
                     onChange={e => {
                       setPatientId(e.target.value);
@@ -230,7 +230,7 @@ function ResultsOutputContent() {
                 <label className="block text-sm font-bold text-slate-600 mb-2">受診日</label>
                 <input
                   type="date"
-                  className={`w-full px-4 py-3 bg-slate-50/50 border ${errors.receptionDate ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-slate-700`}
+                  className={`w-full px-4 py-3 bg-slate-50/50 border ${errors.receptionDate ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all outline-none font-bold text-slate-700`}
                   value={receptionDate}
                   onChange={e => {
                     setReceptionDate(e.target.value);
@@ -253,7 +253,7 @@ function ResultsOutputContent() {
                   <input
                     type="text"
                     placeholder="例: 5001"
-                    className={`flex-1 px-4 py-3 bg-slate-50/50 border ${errors.receptionId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none font-bold text-slate-700`}
+                    className={`flex-1 px-4 py-3 bg-slate-50/50 border ${errors.receptionId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all outline-none font-bold text-slate-700`}
                     value={receptionId}
                     onChange={e => {
                       setReceptionId(e.target.value);
@@ -289,7 +289,7 @@ function ResultsOutputContent() {
               {/* ヘッダー部分 */}
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-20">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                  <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-yellow-100">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
@@ -318,9 +318,9 @@ function ResultsOutputContent() {
                       <th className="py-4 px-3 text-left border-b-2 border-slate-200 sticky left-0 z-10 bg-slate-50 min-w-[140px]">項目名</th>
                       <th className="py-4 px-3 text-center border-b-2 border-slate-200 min-w-[100px] text-slate-500 text-xs uppercase font-black">基準値</th>
                       {historyData.map((h, i) => (
-                        <th key={i} className={`py-4 px-3 text-center border-b-2 border-slate-200 min-w-[120px] ${i === 0 ? 'border-b-blue-500' : ''}`}>
-                          <div className={`text-xs font-black ${i === 0 ? 'text-blue-600' : 'text-slate-500'}`}>受診日</div>
-                          <div className={`text-sm font-bold ${i === 0 ? 'text-blue-700' : 'text-slate-700'}`}>{h.recept_date.replace(/-/g, '/')}</div>
+                        <th key={i} className={`py-4 px-3 text-center border-b-2 border-slate-200 min-w-[120px] ${i === 0 ? 'border-b-yellow-500' : ''}`}>
+                          <div className={`text-xs font-black ${i === 0 ? 'text-yellow-600' : 'text-slate-500'}`}>受診日</div>
+                          <div className={`text-sm font-bold ${i === 0 ? 'text-yellow-700' : 'text-slate-700'}`}>{h.recept_date.replace(/-/g, '/')}</div>
                         </th>
                       ))}
                     </tr>
@@ -345,7 +345,7 @@ function ResultsOutputContent() {
                       <td className="py-2 px-3 text-[10px] font-bold text-slate-400 bg-slate-50 border-r border-slate-200 italic sticky left-0 z-10">判定 (血圧)</td>
                       <td className="border-r border-slate-200"></td>
                       {historyData.map((_, i) => (
-                        <td key={i} className="py-2 px-3 text-center text-xs font-bold text-slate-500 border-r border-slate-200 italic">-</td>
+                        <td key={i} className={`py-2 px-3 text-center text-xs font-bold ${i === 0 ? 'text-yellow-600' : 'text-slate-500'} border-r border-slate-200 italic`}>-</td>
                       ))}
                     </tr>
 
