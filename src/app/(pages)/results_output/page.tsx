@@ -193,13 +193,13 @@ function ResultsOutputContent() {
   const groupedData = React.useMemo(() => {
     const presentItemIds = new Set();
     historyData.forEach(h => {
-      h.results.forEach((_, itemId) => presentItemIds.add(itemId));
+      h.results.forEach((_: any, itemId: any) => presentItemIds.add(itemId));
     });
 
     const visibleItems = itemMasters.filter(item => presentItemIds.has(item.id));
 
     const result: { categoryId: any, categoryName: string, items: any[] }[] = [];
-    let lastCategoryId = null;
+    let lastCategoryId: any = null;
 
     visibleItems.forEach(item => {
       if (item.category_id !== lastCategoryId) {
