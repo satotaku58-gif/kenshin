@@ -281,6 +281,17 @@ function ResultsInputContent() {
     );
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
+        <AppHeader />
+        <main className="flex-1 w-full py-8 px-4 flex items-center justify-center">
+          <div className="text-slate-500 font-medium">読み込み中...</div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
       <AppHeader />

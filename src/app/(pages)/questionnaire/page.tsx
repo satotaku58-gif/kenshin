@@ -19,10 +19,10 @@ function QuestionnaireContent() {
     receptInternalId, setReceptInternalId,
     answers, setAnswers,
     showForm, setShowForm,
+    questions, setQuestions,
     resetState, isLoaded
   } = useQuestionnaire();
   
-  const [questions, setQuestions] = useState<{ id: number; label: string; options: { id: number; content: string }[] }[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [formErrors, setFormErrors] = useState<{ [key: number]: boolean }>({});
   const [showDialog, setShowDialog] = useState(false);
@@ -44,6 +44,9 @@ function QuestionnaireContent() {
     if (!isLoaded) return;
 
     const fetchQuestionsAndAnswers = async () => {
+      // 既に質問データがある場合はフェッチをスキップ
+      if (questions.length > 0) return;
+
       const [qResult, aResult] = await Promise.all([
         supabase
           .from("monsin_question_content")
@@ -82,7 +85,7 @@ function QuestionnaireContent() {
       }
     };
     fetchQuestionsAndAnswers();
-  }, [isLoaded]);
+  }, [isLoaded, questions.length]);
 
   const handleReceptSearch = async () => {
     if (!patientId) {
@@ -209,6 +212,17 @@ function QuestionnaireContent() {
   const handlePrint = () => {
     window.print();
   };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
+        <AppHeader />
+        <main className="flex-1 w-full py-8 px-4 flex items-center justify-center">
+          <div className="text-slate-500 font-medium">読み込み中...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans">

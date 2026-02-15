@@ -10,6 +10,7 @@ interface QuestionnaireState {
   receptInternalId: number | null;
   answers: string[];
   showForm: boolean;
+  questions: { id: number; label: string; options: { id: number; content: string }[] }[];
 }
 
 interface QuestionnaireContextType extends QuestionnaireState {
@@ -20,6 +21,7 @@ interface QuestionnaireContextType extends QuestionnaireState {
   setReceptInternalId: (val: number | null) => void;
   setAnswers: (val: string[] | ((prev: string[]) => string[])) => void;
   setShowForm: (val: boolean) => void;
+  setQuestions: (val: { id: number; label: string; options: { id: number; content: string }[] }[]) => void;
   resetState: () => void;
   isLoaded: boolean;
 }
@@ -32,6 +34,7 @@ const initialState: QuestionnaireState = {
   receptInternalId: null,
   answers: [],
   showForm: false,
+  questions: [],
 };
 
 const QuestionnaireContext = createContext<QuestionnaireContextType | undefined>(undefined);
@@ -72,6 +75,8 @@ export function QuestionnaireProvider({ children }: { children: ReactNode }) {
       answers: typeof val === 'function' ? val(prev.answers) : val 
     }));
   const setShowForm = (showForm: boolean) => setState(prev => ({ ...prev, showForm }));
+  const setQuestions = (questions: { id: number; label: string; options: { id: number; content: string }[] }[]) => 
+    setState(prev => ({ ...prev, questions }));
 
   const resetState = () => {
     setState(initialState);
@@ -89,6 +94,7 @@ export function QuestionnaireProvider({ children }: { children: ReactNode }) {
         setReceptInternalId,
         setAnswers,
         setShowForm,
+        setQuestions,
         resetState,
         isLoaded,
       }}
