@@ -4,7 +4,7 @@ import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 
@@ -83,10 +83,16 @@ function ResultsOutputContent() {
 
     const receptIds = receptHistory.map(r => r.id);
 
-    // 項目マスターを取得
-    const { data: masters, error: masterEditor } = await supabase
+    // 項目マスターをカテゴリ情報付きで取得
+    const { data: masters, error: masterError } = await supabase
       .from("kensa_item_master")
-      .select("*")
+      .select(`
+        *,
+        category:kensa_category_master (
+          name
+        )
+      `)
+      .order("category_id", { ascending: true })
       .order("id", { ascending: true });
 
     if (masters) setItemMasters(masters);
@@ -117,29 +123,23 @@ function ResultsOutputContent() {
     setShowResults(true);
   };
 
-  const getValue = (historyItem: any, itemName: string) => {
-    const master = itemMasters.find(m => m.name === itemName);
-    if (!master) return "-";
-    return historyItem.results.get(master.id) || "-";
-  };
-
-  const TableRow = ({ label, itemName, unit = "" }: { label: string, itemName: string, unit?: string }) => (
+  const TableRow = ({ item }: { item: any }) => (
     <tr className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
       <td className="py-2 px-3 text-sm font-bold text-slate-600 bg-slate-50 border-r border-slate-200 sticky left-0 z-10">
-        {label} <span className="text-[10px] font-normal text-slate-400">{unit}</span>
-      </td>
-      <td className="py-2 px-3 text-center border-r border-slate-200">
-        {/* 基準値（空欄） */}
+        {item.name} {item.unit && <span className="text-[10px] font-normal text-slate-400">{item.unit}</span>}
       </td>
       {historyData.map((h, i) => (
-        <td key={i} className={`py-2 px-3 text-center font-bold text-slate-700 border-r border-slate-200 ${i === 0 ? 'bg-blue-50/30 text-blue-700' : ''}`}>
-          {getValue(h, itemName)}
+        <td key={i} className={`py-2 px-3 text-center font-bold border-r border-slate-200 ${i === 0 ? 'bg-yellow-50/30 text-yellow-700' : 'text-slate-700'}`}>
+          {h.results.get(item.id) || "-"}
         </td>
       ))}
+      <td className="py-2 px-3 text-center border-l border-slate-200 text-slate-400 text-xs">
+        {/* 基準値 */}
+      </td>
     </tr>
   );
 
-  const GroupHeader = ({ label, icon }: { label: string, icon: React.ReactNode }) => (
+  const GroupHeader = ({ label, icon }: { label: string, icon?: React.ReactNode }) => (
     <tr className="bg-slate-100/80">
       <td colSpan={2 + historyData.length} className="py-1.5 px-3 text-[11px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-2">
         {icon}
@@ -148,11 +148,80 @@ function ResultsOutputContent() {
     </tr>
   );
 
+  const PrintTable = ({ title, groups }: { title?: string, groups: { categoryName: string, items: any[] }[] }) => (
+    <div className="flex-1 min-w-0">
+      <table className="w-full border-collapse border border-slate-300 text-[10px]">
+        <thead>
+          <tr className="bg-slate-50">
+            <th className="py-1 px-2 text-left border border-slate-300 w-28">項目名</th>
+            {historyData.map((h, i) => (
+              <th key={i} className="py-1 px-1 text-center border border-slate-300 min-w-[40px]">
+                <div className="scale-90">{h.recept_date.substring(5).replace(/-/g, '/')}</div>
+              </th>
+            ))}
+            <th className="py-1 px-1 text-center border border-slate-300 w-12 text-[9px] text-slate-400 font-black">基準値</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group, gIdx) => (
+            <React.Fragment key={gIdx}>
+              <tr className="bg-slate-100">
+                <td colSpan={2 + historyData.length} className="py-0.5 px-2 font-black text-[9px] border border-slate-300 uppercase">
+                  {group.categoryName}
+                </td>
+              </tr>
+              {group.items.map((item, iIdx) => (
+                <tr key={iIdx} className="border border-slate-300">
+                  <td className="py-1 px-2 border border-slate-300 font-medium">
+                    {item.name} {item.unit && <span className="text-[8px] text-slate-400">{item.unit}</span>}
+                  </td>
+                  {historyData.map((h, i) => (
+                    <td key={i} className={`py-1 px-1 text-center border border-slate-300 font-bold ${i === 0 ? 'bg-yellow-50/50' : ''}`}>
+                      {h.results.get(item.id) || "-"}
+                    </td>
+                  ))}
+                  <td className="py-1 px-1 border border-slate-300 text-center text-slate-300">-</td>
+                </tr>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  const groupedData = React.useMemo(() => {
+    const presentItemIds = new Set();
+    historyData.forEach(h => {
+      h.results.forEach((_, itemId) => presentItemIds.add(itemId));
+    });
+
+    const visibleItems = itemMasters.filter(item => presentItemIds.has(item.id));
+
+    const result: { categoryId: any, categoryName: string, items: any[] }[] = [];
+    let lastCategoryId = null;
+
+    visibleItems.forEach(item => {
+      if (item.category_id !== lastCategoryId) {
+        lastCategoryId = item.category_id;
+        result.push({
+          categoryId: item.category_id,
+          categoryName: item.category?.name || "その他",
+          items: []
+        });
+      }
+      result[result.length - 1].items.push(item);
+    });
+    
+    return result;
+  }, [historyData, itemMasters]);
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
-      <AppHeader />
-      <main className="flex-1 w-full py-8 px-4">
-        <div className="max-w-4xl w-full mx-auto space-y-6">
+      <div className="print:hidden">
+        <AppHeader />
+        <main className="flex-1 w-full py-8 px-4">
+          <div className="max-w-4xl w-full mx-auto space-y-6">
           <PatientSearchDialog
             isOpen={showDialog}
             onClose={() => setShowDialog(false)}
@@ -316,65 +385,26 @@ function ResultsOutputContent() {
                   <thead>
                     <tr className="bg-slate-50">
                       <th className="py-4 px-3 text-left border-b-2 border-slate-200 sticky left-0 z-10 bg-slate-50 min-w-[140px]">項目名</th>
-                      <th className="py-4 px-3 text-center border-b-2 border-slate-200 min-w-[100px] text-slate-500 text-xs uppercase font-black">基準値</th>
                       {historyData.map((h, i) => (
                         <th key={i} className={`py-4 px-3 text-center border-b-2 border-slate-200 min-w-[120px] ${i === 0 ? 'border-b-yellow-500' : ''}`}>
                           <div className={`text-xs font-black ${i === 0 ? 'text-yellow-600' : 'text-slate-500'}`}>受診日</div>
                           <div className={`text-sm font-bold ${i === 0 ? 'text-yellow-700' : 'text-slate-700'}`}>{h.recept_date.replace(/-/g, '/')}</div>
                         </th>
                       ))}
+                      <th className="py-4 px-3 text-center border-b-2 border-slate-200 min-w-[100px] text-slate-500 text-xs uppercase font-black bg-slate-50">基準値</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <GroupHeader 
-                      label="身体計測" 
-                      icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>} 
-                    />
-                    <TableRow label="身長" itemName="身長" unit="cm" />
-                    <TableRow label="体重" itemName="体重" unit="kg" />
-                    <TableRow label="BMI" itemName="BMI" />
-                    <TableRow label="腹囲" itemName="腹囲" unit="cm" />
-
-                    <GroupHeader 
-                      label="血圧" 
-                      icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>} 
-                    />
-                    <TableRow label="最高血圧" itemName="最高血圧" unit="mmHg" />
-                    <TableRow label="最低血圧" itemName="最低血圧" unit="mmHg" />
-                    <tr className="border-b border-slate-200 bg-slate-50/30">
-                      <td className="py-2 px-3 text-[10px] font-bold text-slate-400 bg-slate-50 border-r border-slate-200 italic sticky left-0 z-10">判定 (血圧)</td>
-                      <td className="border-r border-slate-200"></td>
-                      {historyData.map((_, i) => (
-                        <td key={i} className={`py-2 px-3 text-center text-xs font-bold ${i === 0 ? 'text-yellow-600' : 'text-slate-500'} border-r border-slate-200 italic`}>-</td>
-                      ))}
-                    </tr>
-
-                    <GroupHeader 
-                      label="視力・聴力" 
-                      icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>} 
-                    />
-                    <TableRow label="視力(右)" itemName="視力（右）" />
-                    <TableRow label="視力(左)" itemName="視力（左）" />
-                    <TableRow label="聴力右1000Hz" itemName="聴力右1000Hz" />
-                    <TableRow label="聴力右4000Hz" itemName="聴力右4000Hz" />
-                    <TableRow label="聴力左1000Hz" itemName="聴力左1000Hz" />
-                    <TableRow label="聴力左4000Hz" itemName="聴力左4000Hz" />
-
-                    <GroupHeader 
-                      label="尿検査" 
-                      icon={<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.673.337a4 4 0 01-2.574.345l-3.141-.628a2 2 0 00-1.88 2.383l.721 3.605A2 2 0 005.627 22h12.746a2 2 0 001.963-1.584l.721-3.605a2 2 0 00-1.63-2.383z" /></svg>} 
-                    />
-                    <TableRow label="尿蛋白" itemName="尿蛋白" />
-                    <TableRow label="尿糖" itemName="尿糖" />
-                    <TableRow label="ウロビリノーゲン" itemName="尿ウロビリノーゲン" />
-                    <TableRow label="尿潜血" itemName="尿潜血" />
-                    <tr className="border-b border-slate-200 bg-slate-50/30">
-                      <td className="py-2 px-3 text-[10px] font-bold text-slate-400 bg-slate-50 border-r border-slate-200 italic sticky left-0 z-10">判定 (尿検査)</td>
-                      <td className="border-r border-slate-200"></td>
-                      {historyData.map((_, i) => (
-                        <td key={i} className="py-2 px-3 text-center text-xs font-bold text-slate-500 border-r border-slate-200 italic">-</td>
-                      ))}
-                    </tr>
+                    {groupedData.map((group, gIdx) => (
+                      <React.Fragment key={gIdx}>
+                        <GroupHeader 
+                          label={group.categoryName} 
+                        />
+                        {group.items.map((item: any) => (
+                          <TableRow key={item.id} item={item} />
+                        ))}
+                      </React.Fragment>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -395,6 +425,50 @@ function ResultsOutputContent() {
         </div>
       </main>
     </div>
+
+    {/* 印刷用レイアウト (A4 Landscape) */}
+    <div className="hidden print:block p-8 bg-white text-slate-900 min-h-screen">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @page { size: landscape; margin: 10mm; }
+        @media print {
+          body { background: white; }
+          .print-container { width: 100%; max-width: none; }
+        }
+      `}} />
+      <div className="max-w-none mx-auto print-container">
+        <div className="flex justify-between items-end border-b-2 border-slate-900 pb-2 mb-6">
+          <h1 className="text-xl font-black italic tracking-tighter">HEALTH CHECK RESULTS <span className="text-sm font-bold not-italic ml-2">検査結果比較表</span></h1>
+          <div className="text-right flex items-baseline gap-6">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] font-bold text-slate-400">PATIENT ID</span>
+              <span className="font-mono font-bold text-lg">{patientId}</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] font-bold text-slate-400">NAME</span>
+              <span className="font-bold text-lg">{patientName} <small className="text-slate-400 font-normal">様</small></span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex gap-8 items-start">
+          {/* 左カラム */}
+          <PrintTable 
+            groups={groupedData.slice(0, Math.ceil(groupedData.length / 2))}
+          />
+          
+          {/* 右カラム */}
+          <PrintTable 
+            groups={groupedData.slice(Math.ceil(groupedData.length / 2))}
+          />
+        </div>
+        
+        <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center text-[9px] text-slate-400 font-medium">
+          <div>※ 本結果表は、過去最大4回分の経時変化を表示しています。</div>
+          <div>発行日時: {new Date().toLocaleString('ja-JP')}</div>
+        </div>
+      </div>
+    </div>
+  </div>
   );
 }
 
