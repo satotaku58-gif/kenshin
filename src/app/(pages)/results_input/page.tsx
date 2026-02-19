@@ -8,6 +8,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useResultsInput } from "../../context/ResultsInputContext";
+import { fetchPatientBasic, validateReception } from "../../api/receptApi";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
@@ -58,43 +59,20 @@ function ResultsInputContent() {
       return;
     }
 
-    // 患者存在チェック
-    const { data: patientData, error: patientError } = await supabase
-      .from("patient_basic")
-      .select("id, name")
-      .eq("id", patientId)
-      .single();
+    try {
+      // 患者存在チェック
+      const patientData = await fetchPatientBasic(patientId);
+      setPatientName(patientData.name);
 
-    if (patientError || !patientData) {
-      setErrors({ patientId: "登録されていない患者IDです" });
-      setShowForm(false);
-      return;
-    }
+      // 受付存在チェック
+      const receptData = await validateReception(patientId, receptionDate, receptionId);
+      setReceptPk(receptData.id);
 
-    setPatientName(patientData.name);
-
-    // 受付存在チェック
-    const { data: receptData, error: receptError } = await supabase
-      .from("recept")
-      .select("id, recept_id, course")
-      .eq("recept_id", receptionId)
-      .eq("patient_id", patientId)
-      .eq("recept_date", receptionDate)
-      .single();
-
-    if (receptError || !receptData) {
-      setErrors({ receptionId: "指定の患者IDに対する受付データが見つかりません" });
-      setShowForm(false);
-      return;
-    }
-
-    setReceptPk(receptData.id);
-
-    // 2. コースに紐づく検査項目を取得
-    const { data: courseItems, error: courseItemsError } = await supabase
-      .from("kensa_course_items")
-      .select("item_id")
-      .eq("course_id", receptData.course);
+      // 2. コースに紐づく検査項目を取得
+      const { data: courseItems, error: courseItemsError } = await supabase
+        .from("kensa_course_items")
+        .select("item_id")
+        .eq("course_id", receptData.course);
 
     if (courseItemsError || !courseItems) {
       console.error("Course items fetch error:", courseItemsError);
@@ -166,6 +144,10 @@ function ResultsInputContent() {
     setExaminationItems(itemsWithTypes);
     setErrors({});
     setShowForm(true);
+    } catch (err: any) {
+      setErrors({ [err.message.includes("患者") ? "patientId" : "receptionId"]: err.message });
+      setShowForm(false);
+    }
   };
 
   const handleInputChange = (itemId: number, value: string, type: string, isSelectable: boolean) => {

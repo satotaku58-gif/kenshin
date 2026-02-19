@@ -7,6 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
+import { fetchPatientBasic, validateReception } from "../../api/receptApi";
 
 function ResultsOutputContent() {
   const searchParams = useSearchParams();
@@ -65,31 +66,25 @@ function ResultsOutputContent() {
       return;
     }
 
-    // 患者存在チェック
-    const { data: patientData, error: patientError } = await supabase
-      .from("patient_basic")
-      .select("id, name, birthdate, sex")
-      .eq("id", patientId)
-      .single();
+    try {
+      // 患者存在チェック
+      const patientData = await fetchPatientBasic(patientId);
 
-    if (patientError || !patientData) {
-      setErrors({ patientId: "登録されていない患者IDです" });
-      setShowResults(false);
-      return;
-    }
+      setPatientName(patientData.name);
+      setPatientBirth(patientData.birthdate || "");
+      setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
 
-    setPatientName(patientData.name);
-    setPatientBirth(patientData.birthdate || "");
-    setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
+      // 受付存在チェック (整合性の確認のみ)
+      await validateReception(patientId, receptionDate, receptionId);
 
-    // 過去の受診履歴を最大4件取得（今回分を含む）
-    const { data: receptHistory, error: historyError } = await supabase
-      .from("recept")
-      .select("id, recept_id, recept_date")
-      .eq("patient_id", patientId)
-      .lte("recept_date", receptionDate) // 今回の受診日以前
-      .order("recept_date", { ascending: false })
-      .limit(4);
+      // 過去の受診履歴を最大4件取得（今回分を含む）
+      const { data: receptHistory, error: historyError } = await supabase
+        .from("recept")
+        .select("id, recept_id, recept_date")
+        .eq("patient_id", patientId)
+        .lte("recept_date", receptionDate) // 今回の受診日以前
+        .order("recept_date", { ascending: false })
+        .limit(4);
 
     if (historyError || !receptHistory || receptHistory.length === 0) {
       setErrors({ receptionId: "受診履歴が見つかりません" });
@@ -137,6 +132,10 @@ function ResultsOutputContent() {
     setHistoryData(historyWithResults); // 降順（左が最新）でセット
     setErrors({});
     setShowResults(true);
+    } catch (err: any) {
+      setErrors({ [err.message.includes("患者") ? "patientId" : "receptionId"]: err.message });
+      setShowResults(false);
+    }
   };
 
   const TableRow = ({ item }: { item: any }) => (

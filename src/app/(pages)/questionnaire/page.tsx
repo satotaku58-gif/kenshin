@@ -8,6 +8,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
+import { fetchPatientBasic, validateReception } from "../../api/receptApi";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -114,39 +115,21 @@ function QuestionnaireContent() {
     setFormErrors({});
     setSubmitError("");
 
-    // 患者存在チェック
-    const { data: patientData, error: patientError } = await supabase
-      .from("patient_basic")
-      .select("id, name")
-      .eq("id", patientId)
-      .single();
+    try {
+      // 患者存在チェック
+      const patientData = await fetchPatientBasic(patientId);
+      setPatientName(patientData.name);
 
-    if (patientError || !patientData) {
-      setErrors({ patientId: "登録されていない患者IDです" });
+      // 受付存在チェック
+      const receptData = await validateReception(patientId, receptionDate, receptionId);
+      setReceptInternalId(receptData.id);
+      
+      setErrors({});
+      setShowForm(true);
+    } catch (err: any) {
+      setErrors({ [err.message.includes("患者") ? "patientId" : "receptionId"]: err.message });
       setShowForm(false);
-      return;
     }
-
-    setPatientName(patientData.name);
-
-    // 受付存在チェック (患者ID、受診日、受付IDの整合性)
-    const { data: receptData, error: receptError } = await supabase
-      .from("recept")
-      .select("id, recept_id")
-      .eq("recept_id", receptionId)
-      .eq("patient_id", patientId)
-      .eq("recept_date", receptionDate)
-      .single();
-
-    if (receptError || !receptData) {
-      setErrors({ receptionId: "指定の患者IDに対する受付データが見つかりません" });
-      setShowForm(false);
-      return;
-    }
-
-    setReceptInternalId(receptData.id);
-    setErrors({});
-    setShowForm(true);
   };
 
   const handleChange = (idx: number, value: string) => {
