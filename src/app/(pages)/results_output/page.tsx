@@ -182,43 +182,45 @@ function ResultsOutputContent() {
 
   const PrintTable = ({ groups }: { groups: { categoryName: string, items: any[] }[] }) => (
     <div className="flex-1 min-w-0">
-      <table className="w-full border-collapse border-t-2 border-slate-900 text-[9px]">
+      <table className="w-full border-collapse border-t-2 border-slate-900 text-[9px] text-black">
         <thead>
           <tr className="bg-slate-50">
+            <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-8 font-bold bg-slate-100/50">分類</th>
             <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-32 font-bold bg-slate-100/50">項目名</th>
             {historyData.map((h, i) => (
               <th key={i} className={`py-1 px-1 text-center border-b border-r border-slate-300 min-w-[45px] ${i === 0 ? 'bg-slate-100 font-bold' : 'font-medium'}`}>
                 <div className="scale-90">{h.recept_date.substring(5).replace(/-/g, '/')}</div>
               </th>
             ))}
-            <th className="py-1 px-1 text-center border-b border-slate-300 w-14 font-bold text-slate-500">基準値</th>
+            <th className="py-1 px-1 text-center border-b border-slate-300 w-14 font-bold">基準値</th>
           </tr>
         </thead>
         <tbody>
           {groups.map((group, gIdx) => (
             <React.Fragment key={gIdx}>
-              <tr className="bg-slate-50/50">
-                <td 
-                  colSpan={2 + historyData.length} 
-                  className="py-1 px-2 font-black text-[8px] border-b border-slate-200 text-slate-400 uppercase tracking-tighter"
-                >
-                  {group.categoryName}
-                </td>
-              </tr>
               {group.items.map((item, iIdx) => (
                 <tr key={iIdx} className="border-b border-slate-100">
-                  <td className="py-1 px-2 border-r border-slate-200 font-medium text-slate-800">
+                  {iIdx === 0 && (
+                    <td 
+                      rowSpan={group.items.length} 
+                      className="py-1 px-2 border-r border-slate-300 font-black text-[7px] uppercase tracking-tighter bg-slate-50/30"
+                      style={{ verticalAlign: 'middle', writingMode: 'vertical-lr' }}
+                    >
+                      {group.categoryName}
+                    </td>
+                  )}
+                  <td className="py-1 px-2 border-r border-slate-200 font-medium">
                     <div className="flex justify-between items-baseline gap-1">
                       <span>{item.name}</span>
-                      {item.unit && <span className="text-[7px] text-slate-400 font-normal">{item.unit}</span>}
+                      {item.unit && <span className="text-[7px] font-normal">{item.unit}</span>}
                     </div>
                   </td>
                   {historyData.map((h, i) => (
-                    <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold text-yellow-900' : 'text-slate-600'}`}>
+                    <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold' : ''}`}>
                       {h.results.get(item.id) || "-"}
                     </td>
                   ))}
-                  <td className="py-1 px-1 text-center text-slate-300 font-mono">-</td>
+                  <td className="py-1 px-1 text-center font-mono">-</td>
                 </tr>
               ))}
             </React.Fragment>
@@ -254,8 +256,29 @@ function ResultsOutputContent() {
     return result;
   }, [historyData, itemMasters]);
 
+  const splitIndex = React.useMemo(() => {
+    const totalItems = groupedData.reduce((acc, g) => acc + g.items.length, 0);
+    // 所見欄の高さを項目数（約6項目分）として換算
+    const findingsWeight = 6;
+    const targetWeight = (totalItems + findingsWeight) / 2;
+    
+    let currentWeight = 0;
+    for (let i = 0; i < groupedData.length; i++) {
+      const nextWeight = currentWeight + groupedData[i].items.length;
+      if (nextWeight >= targetWeight) {
+        // 半分を超える前と後のどちらがよりバランスが良いか比較
+        if (Math.abs(targetWeight - currentWeight) < Math.abs(nextWeight - targetWeight)) {
+          return i || 1; // 最低1つは左へ
+        }
+        return i + 1;
+      }
+      currentWeight = nextWeight;
+    }
+    return Math.ceil(groupedData.length / 2);
+  }, [groupedData]);
+
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 font-sans">
+    <div className="flex min-h-screen print:block flex-col bg-slate-50 print:bg-white font-sans">
       <div className="print:hidden">
         <AppHeader />
         <main className="flex-1 w-full py-8 px-4">
@@ -419,18 +442,20 @@ function ResultsOutputContent() {
     </div>
 
     {/* 印刷用レイアウト (A4 Landscape) */}
-    <div className="hidden print:block p-8 bg-white text-slate-900 min-h-screen">
+    <div className="hidden print:block p-0 bg-white text-slate-900">
       <style dangerouslySetInnerHTML={{ __html: `
         @page { size: landscape; margin: 10mm; }
         @media print {
-          body { background: white; }
-          .print-container { width: 100%; max-width: none; }
+          html, body { height: auto !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+          body { background: white; -webkit-print-color-adjust: exact; }
+          .print-container { width: 100%; max-width: none; margin: 0; padding: 0; }
+          .print\:hidden { display: none !important; }
         }
       `}} />
-      <div className="max-w-none mx-auto print-container">
-        <div className="flex gap-8 items-start">
+      <div className="max-w-none mx-auto print-container p-4">
+        <div className="flex gap-8 items-stretch">
           {/* 左カラム */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col">
             <div className="flex justify-start items-end border-b-2 border-slate-900 pb-2 mb-6">
               <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                 <div className="flex items-baseline gap-1.5 border-r border-slate-200 pr-4">
@@ -458,19 +483,26 @@ function ResultsOutputContent() {
               </div>
             </div>
             <PrintTable 
-              groups={groupedData.slice(0, Math.ceil(groupedData.length / 2))}
+              groups={groupedData.slice(0, splitIndex)}
             />
           </div>
           
           {/* 右カラム */}
-          <PrintTable 
-            groups={groupedData.slice(Math.ceil(groupedData.length / 2))}
-          />
+          <div className="flex-1 min-w-0 flex flex-col">
+            <PrintTable 
+              groups={groupedData.slice(splitIndex)}
+            />
+            
+            <div className="flex-1"></div>
+            
+            {/* 所見欄 */}
+            <div className="border border-slate-300 rounded-sm mt-4">
+              <div className="bg-slate-50 px-2 py-1 text-[8px] font-bold border-b border-slate-300 uppercase tracking-widest text-slate-500">所見</div>
+              <div className="min-h-[120px]"></div>
+            </div>
+          </div>
         </div>
-        
-        <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center text-[9px] text-slate-400 font-medium">
-          <div>発行日時: {new Date().toLocaleString('ja-JP')}</div>
-        </div>
+
       </div>
     </div>
   </div>
