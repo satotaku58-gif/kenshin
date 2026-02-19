@@ -3,7 +3,7 @@
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptSearchDialog from "../../component/ReceptSearchDialog";
-import ReceptStartForm from "../../component/ReceptStartForm";
+import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
@@ -13,6 +13,8 @@ function ResultsOutputContent() {
 
   const [patientId, setPatientId] = useState("");
   const [patientName, setPatientName] = useState("");
+  const [patientBirth, setPatientBirth] = useState("");
+  const [patientGender, setPatientGender] = useState("");
   const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
   const [receptionId, setReceptionId] = useState("");
   const [showResults, setShowResults] = useState(false);
@@ -21,6 +23,18 @@ function ResultsOutputContent() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
+
+  const calculateAge = (birthDate: string) => {
+    if (!birthDate) return "";
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
 
   useEffect(() => {
     const pId = searchParams.get("patientId");
@@ -54,7 +68,7 @@ function ResultsOutputContent() {
     // 患者存在チェック
     const { data: patientData, error: patientError } = await supabase
       .from("patient_basic")
-      .select("id, name")
+      .select("id, name, birthdate, sex")
       .eq("id", patientId)
       .single();
 
@@ -65,6 +79,8 @@ function ResultsOutputContent() {
     }
 
     setPatientName(patientData.name);
+    setPatientBirth(patientData.birthdate || "");
+    setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
 
     // 過去の受診履歴を最大4件取得（今回分を含む）
     const { data: receptHistory, error: historyError } = await supabase
@@ -124,63 +140,86 @@ function ResultsOutputContent() {
   };
 
   const TableRow = ({ item }: { item: any }) => (
-    <tr className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-      <td className="py-2 px-3 text-sm font-bold text-slate-600 bg-slate-50 border-r border-slate-200 sticky left-0 z-10">
-        {item.name} {item.unit && <span className="text-[10px] font-normal text-slate-400">{item.unit}</span>}
+    <tr className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors group">
+      <td className="py-3 px-4 text-sm font-semibold text-slate-700 bg-white border-r border-slate-100 sticky left-0 z-10 group-hover:bg-blue-50/30 transition-colors">
+        <div className="flex flex-col">
+          <span>{item.name}</span>
+          {item.unit && (
+            <span className="text-[10px] font-medium text-slate-400 mt-0.5 leading-none">
+              {item.unit}
+            </span>
+          )}
+        </div>
       </td>
       {historyData.map((h, i) => (
-        <td key={i} className={`py-2 px-3 text-center font-bold border-r border-slate-200 ${i === 0 ? 'bg-yellow-50/30 text-yellow-700' : 'text-slate-700'}`}>
+        <td 
+          key={i} 
+          className={`py-3 px-4 text-center font-mono text-[13px] border-r border-slate-100 ${
+            i === 0 ? 'bg-yellow-50/30 font-bold text-yellow-800' : 'text-slate-600'
+          }`}
+        >
           {h.results.get(item.id) || "-"}
         </td>
       ))}
-      <td className="py-2 px-3 text-center border-l border-slate-200 text-slate-400 text-xs">
-        {/* 基準値 */}
+      <td className="py-3 px-4 text-center text-slate-400 text-[11px] font-medium">
+        -
       </td>
     </tr>
   );
 
-  const GroupHeader = ({ label, icon }: { label: string, icon?: React.ReactNode }) => (
-    <tr className="bg-slate-100/80">
-      <td colSpan={2 + historyData.length} className="py-1.5 px-3 text-[11px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-2">
-        {icon}
-        {label}
+  const GroupHeader = ({ label }: { label: string }) => (
+    <tr className="bg-slate-50/50 backdrop-blur-sm">
+      <td 
+        colSpan={2 + historyData.length} 
+        className="py-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] border-y border-slate-100"
+      >
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-[2px] bg-slate-300 rounded-full"></div>
+          {label}
+        </div>
       </td>
     </tr>
   );
 
-  const PrintTable = ({ title, groups }: { title?: string, groups: { categoryName: string, items: any[] }[] }) => (
+  const PrintTable = ({ groups }: { groups: { categoryName: string, items: any[] }[] }) => (
     <div className="flex-1 min-w-0">
-      <table className="w-full border-collapse border border-slate-300 text-[10px]">
+      <table className="w-full border-collapse border-t-2 border-slate-900 text-[9px]">
         <thead>
           <tr className="bg-slate-50">
-            <th className="py-1 px-2 text-left border border-slate-300 w-28">項目名</th>
+            <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-32 font-bold bg-slate-100/50">項目名</th>
             {historyData.map((h, i) => (
-              <th key={i} className="py-1 px-1 text-center border border-slate-300 min-w-[40px]">
+              <th key={i} className={`py-1 px-1 text-center border-b border-r border-slate-300 min-w-[45px] ${i === 0 ? 'bg-slate-100 font-bold' : 'font-medium'}`}>
                 <div className="scale-90">{h.recept_date.substring(5).replace(/-/g, '/')}</div>
               </th>
             ))}
-            <th className="py-1 px-1 text-center border border-slate-300 w-12 text-[9px] text-slate-400 font-black">基準値</th>
+            <th className="py-1 px-1 text-center border-b border-slate-300 w-14 font-bold text-slate-500">基準値</th>
           </tr>
         </thead>
         <tbody>
           {groups.map((group, gIdx) => (
             <React.Fragment key={gIdx}>
-              <tr className="bg-slate-100">
-                <td colSpan={2 + historyData.length} className="py-0.5 px-2 font-black text-[9px] border border-slate-300 uppercase">
+              <tr className="bg-slate-50/50">
+                <td 
+                  colSpan={2 + historyData.length} 
+                  className="py-1 px-2 font-black text-[8px] border-b border-slate-200 text-slate-400 uppercase tracking-tighter"
+                >
                   {group.categoryName}
                 </td>
               </tr>
               {group.items.map((item, iIdx) => (
-                <tr key={iIdx} className="border border-slate-300">
-                  <td className="py-1 px-2 border border-slate-300 font-medium">
-                    {item.name} {item.unit && <span className="text-[8px] text-slate-400">{item.unit}</span>}
+                <tr key={iIdx} className="border-b border-slate-100">
+                  <td className="py-1 px-2 border-r border-slate-200 font-medium text-slate-800">
+                    <div className="flex justify-between items-baseline gap-1">
+                      <span>{item.name}</span>
+                      {item.unit && <span className="text-[7px] text-slate-400 font-normal">{item.unit}</span>}
+                    </div>
                   </td>
                   {historyData.map((h, i) => (
-                    <td key={i} className={`py-1 px-1 text-center border border-slate-300 font-bold ${i === 0 ? 'bg-yellow-50/50' : ''}`}>
+                    <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold text-yellow-900' : 'text-slate-600'}`}>
                       {h.results.get(item.id) || "-"}
                     </td>
                   ))}
-                  <td className="py-1 px-1 border border-slate-300 text-center text-slate-300">-</td>
+                  <td className="py-1 px-1 text-center text-slate-300 font-mono">-</td>
                 </tr>
               ))}
             </React.Fragment>
@@ -248,7 +287,7 @@ function ResultsOutputContent() {
             themeColor="yellow"
           />
 
-          <ReceptStartForm
+          <CommonStartForm
             title="検査結果表示"
             description="患者IDと受付IDを入力して、検査結果を表示してください。"
             icon={
@@ -259,99 +298,17 @@ function ResultsOutputContent() {
             onSubmit={handleStart}
             submitLabel="結果を表示する"
             themeColor="yellow"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-              <div className="relative">
-                <label className="block text-sm font-bold text-slate-600 mb-2">患者ID</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="例: 1001"
-                    className={`flex-1 px-4 py-3 bg-slate-50/50 border ${errors.patientId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all outline-none font-bold text-slate-700`}
-                    value={patientId}
-                    onChange={e => {
-                      setPatientId(e.target.value);
-                      if (errors.patientId) setErrors(prev => ({ ...prev, patientId: "" }));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowDialog(true)}
-                    className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center shrink-0 group"
-                    title="患者IDを検索"
-                  >
-                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                </div>
-                {errors.patientId && (
-                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.patientId}
-                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <label className="block text-sm font-bold text-slate-600 mb-2">受診日</label>
-                <input
-                  type="date"
-                  className={`w-full px-4 py-3 bg-slate-50/50 border ${errors.receptionDate ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all outline-none font-bold text-slate-700`}
-                  value={receptionDate}
-                  onChange={e => {
-                    setReceptionDate(e.target.value);
-                    if (errors.receptionDate) setErrors(prev => ({ ...prev, receptionDate: "" }));
-                  }}
-                />
-                {errors.receptionDate && (
-                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.receptionDate}
-                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <label className="block text-sm font-bold text-slate-600 mb-2">受付ID</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="例: 5001"
-                    className={`flex-1 px-4 py-3 bg-slate-50/50 border ${errors.receptionId ? 'border-red-500 bg-red-50/50' : 'border-slate-200'} rounded-xl focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all outline-none font-bold text-slate-700`}
-                    value={receptionId}
-                    onChange={e => {
-                      setReceptionId(e.target.value);
-                      if (errors.receptionId) setErrors(prev => ({ ...prev, receptionId: "" }));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleReceptSearch}
-                    className="px-4 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center shrink-0 group"
-                    title="受付IDを検索"
-                  >
-                    <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </button>
-                </div>
-                {errors.receptionId && (
-                  <div className="absolute top-full left-0 mt-2 z-10 bg-white border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-xl shadow-xl shadow-red-100/50 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {errors.receptionId}
-                    <div className="absolute -top-1 left-4 w-2 h-2 bg-white border-t border-l border-red-200 rotate-45"></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </ReceptStartForm>
+            patientId={patientId}
+            setPatientId={setPatientId}
+            receptionDate={receptionDate}
+            setReceptionDate={setReceptionDate}
+            receptionId={receptionId}
+            setReceptionId={setReceptionId}
+            errors={errors}
+            setErrors={setErrors}
+            onPatientSearchClick={() => setShowDialog(true)}
+            onReceptSearchClick={handleReceptSearch}
+          />
 
           {showResults ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -364,8 +321,23 @@ function ResultsOutputContent() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-slate-800">{patientName} 様 検査結果比較表</h2>
-                    <p className="text-sm text-slate-500 font-medium">過去の経時変化をご確認いただけます。</p>
+                    <div className="flex items-baseline gap-2">
+                      <h2 className="text-xl font-bold text-slate-800">{patientName} 様</h2>
+                      <span className="text-sm font-medium text-slate-400">検査結果比較表</span>
+                    </div>
+                    <div className="flex items-center gap-4 mt-1">
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 rounded text-[11px] font-bold text-slate-600">
+                        <span className="text-slate-400">ID:</span>
+                        <span className="font-mono">{patientId}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[12px] text-slate-500 font-medium">
+                        <span>{patientBirth.replace(/-/g, '/')} 生</span>
+                        <span className="w-px h-3 bg-slate-200"></span>
+                        <span>{patientGender}</span>
+                        <span className="w-px h-3 bg-slate-200"></span>
+                        <span className="text-slate-700 font-bold">{calculateAge(patientBirth)} 歳</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <button 
@@ -380,18 +352,31 @@ function ResultsOutputContent() {
               </div>
 
               {/* テーブル本体 */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border-t border-slate-100">
                 <table className="w-full border-collapse">
                   <thead>
-                    <tr className="bg-slate-50">
-                      <th className="py-4 px-3 text-left border-b-2 border-slate-200 sticky left-0 z-10 bg-slate-50 min-w-[140px]">項目名</th>
+                    <tr className="bg-slate-50/50">
+                      <th className="py-5 px-4 text-left border-b border-slate-200 sticky left-0 z-30 bg-slate-50/50 backdrop-blur-md min-w-[160px] shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">項目名</span>
+                      </th>
                       {historyData.map((h, i) => (
-                        <th key={i} className={`py-4 px-3 text-center border-b-2 border-slate-200 min-w-[120px] ${i === 0 ? 'border-b-yellow-500' : ''}`}>
-                          <div className={`text-xs font-black ${i === 0 ? 'text-yellow-600' : 'text-slate-500'}`}>受診日</div>
-                          <div className={`text-sm font-bold ${i === 0 ? 'text-yellow-700' : 'text-slate-700'}`}>{h.recept_date.replace(/-/g, '/')}</div>
+                        <th key={i} className={`py-5 px-4 text-center border-b border-slate-200 min-w-[130px] ${i === 0 ? 'bg-yellow-50/20' : ''}`}>
+                          <div className="flex flex-col items-center gap-1">
+                            {i === 0 && (
+                              <span className="px-2 py-0.5 bg-yellow-400 text-[9px] font-black text-white rounded-full leading-none mb-1">NEW</span>
+                            )}
+                            <div className={`text-[10px] font-bold tracking-tighter ${i === 0 ? 'text-yellow-600' : 'text-slate-400 uppercase'}`}>
+                              {i === 0 ? '今回受診' : '前回以前'}
+                            </div>
+                            <div className={`text-sm font-black font-mono ${i === 0 ? 'text-yellow-900' : 'text-slate-600'}`}>
+                              {h.recept_date.replace(/-/g, '/')}
+                            </div>
+                          </div>
                         </th>
                       ))}
-                      <th className="py-4 px-3 text-center border-b-2 border-slate-200 min-w-[100px] text-slate-500 text-xs uppercase font-black bg-slate-50">基準値</th>
+                      <th className="py-5 px-4 text-center border-b border-slate-200 min-w-[100px]">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">基準値</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -408,8 +393,16 @@ function ResultsOutputContent() {
                   </tbody>
                 </table>
               </div>
-              <div className="p-4 bg-slate-50 border-t border-slate-100 italic text-[10px] text-slate-400 text-right">
-                ※判定および基準値は現在開発中のためモック表示となっています。
+              <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100/50 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium italic">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  判定および基準値は現在開発中のためモック表示となっています。
+                </div>
+                <div className="text-[10px] text-slate-300 font-mono select-none uppercase tracking-tighter">
+                  Kenshin Management System v1.0
+                </div>
               </div>
             </div>
           ) : (
@@ -436,25 +429,39 @@ function ResultsOutputContent() {
         }
       `}} />
       <div className="max-w-none mx-auto print-container">
-        <div className="flex justify-between items-end border-b-2 border-slate-900 pb-2 mb-6">
-          <h1 className="text-xl font-black italic tracking-tighter">HEALTH CHECK RESULTS <span className="text-sm font-bold not-italic ml-2">検査結果比較表</span></h1>
-          <div className="text-right flex items-baseline gap-6">
-            <div className="flex items-baseline gap-1">
-              <span className="text-[10px] font-bold text-slate-400">PATIENT ID</span>
-              <span className="font-mono font-bold text-lg">{patientId}</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-[10px] font-bold text-slate-400">NAME</span>
-              <span className="font-bold text-lg">{patientName} <small className="text-slate-400 font-normal">様</small></span>
-            </div>
-          </div>
-        </div>
-        
         <div className="flex gap-8 items-start">
           {/* 左カラム */}
-          <PrintTable 
-            groups={groupedData.slice(0, Math.ceil(groupedData.length / 2))}
-          />
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-start items-end border-b-2 border-slate-900 pb-2 mb-6">
+              <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <div className="flex items-baseline gap-1.5 border-r border-slate-200 pr-4">
+                  <span className="text-[8px] font-bold text-slate-400 tracking-widest">ID</span>
+                  <span className="font-mono font-bold text-xl text-slate-900">{patientId}</span>
+                </div>
+                <div className="flex items-baseline gap-1.5 border-r border-slate-200 pr-4">
+                  <span className="text-[8px] font-bold text-slate-400 tracking-widest">氏名</span>
+                  <span className="font-bold text-xl text-slate-900">{patientName} <small className="text-slate-400 font-normal text-xs">様</small></span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Birth</span>
+                    <span className="font-bold text-[11px] text-slate-800">{patientBirth.replace(/-/g, '/')}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Sex</span>
+                    <span className="font-bold text-[11px] text-slate-800">{patientGender}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">Age</span>
+                    <span className="font-bold text-[11px] text-slate-800">{calculateAge(patientBirth)}歳</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <PrintTable 
+              groups={groupedData.slice(0, Math.ceil(groupedData.length / 2))}
+            />
+          </div>
           
           {/* 右カラム */}
           <PrintTable 
@@ -463,7 +470,6 @@ function ResultsOutputContent() {
         </div>
         
         <div className="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center text-[9px] text-slate-400 font-medium">
-          <div>※ 本結果表は、過去最大4回分の経時変化を表示しています。</div>
           <div>発行日時: {new Date().toLocaleString('ja-JP')}</div>
         </div>
       </div>
