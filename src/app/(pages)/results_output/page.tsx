@@ -24,6 +24,8 @@ function ResultsOutputContent() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
+  const [findings, setFindings] = useState("");
+  const [judge, setJudge] = useState("判定しない");
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return "";
@@ -335,28 +337,28 @@ function ResultsOutputContent() {
           {showResults ? (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               {/* ヘッダー部分 */}
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-20">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-yellow-100">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between bg-white sticky top-0 z-20 gap-4">
+                <div className="flex flex-row items-center gap-4 sm:gap-6">
+                  <div className="flex-none w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-yellow-100">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a2 2 0 00-2-2H5a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
                   <div>
-                    <div className="flex items-baseline gap-2">
-                      <h2 className="text-xl font-bold text-slate-800">{patientName} 様</h2>
-                      <span className="text-sm font-medium text-slate-400">検査結果比較表</span>
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <h2 className="text-lg sm:text-xl font-bold text-slate-800">{patientName} 様</h2>
+                      <span className="text-xs sm:text-sm font-medium text-slate-400">検査結果比較表</span>
                     </div>
-                    <div className="flex items-center gap-4 mt-1">
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 rounded text-[11px] font-bold text-slate-600">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1.5">
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 rounded text-[10px] sm:text-[11px] font-bold text-slate-600">
                         <span className="text-slate-400">ID:</span>
                         <span className="font-mono">{patientId}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-[12px] text-slate-500 font-medium">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-[12px] text-slate-500 font-medium">
                         <span>{patientBirth.replace(/-/g, '/')} 生</span>
-                        <span className="w-px h-3 bg-slate-200"></span>
+                        <span className="hidden sm:inline w-px h-3 bg-slate-200"></span>
                         <span>{patientGender}</span>
-                        <span className="w-px h-3 bg-slate-200"></span>
+                        <span className="hidden sm:inline w-px h-3 bg-slate-200"></span>
                         <span className="text-slate-700 font-bold">{calculateAge(patientBirth)} 歳</span>
                       </div>
                     </div>
@@ -364,13 +366,62 @@ function ResultsOutputContent() {
                 </div>
                 <button 
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+                  className="w-full sm:w-auto px-4 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2 shrink-0 shadow-sm sm:shadow-none"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
                   印刷する
                 </button>
+              </div>
+
+              {/* 医師による判定・所見セクション */}
+              <div className="p-4 sm:p-6 bg-slate-50/30 border-b border-slate-100">
+                <div className="p-3 sm:p-4 bg-slate-50/80 rounded-xl border border-slate-200/60 shadow-inner flex flex-col lg:flex-row items-stretch gap-4 sm:gap-6">
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 px-1">
+                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">医師による判定・所見</span>
+                    </div>
+                    <textarea
+                      value={findings}
+                      onChange={(e) => setFindings(e.target.value)}
+                      placeholder="こちらに所見を入力してください"
+                      className="w-full p-2 sm:p-3 text-[12px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-medium text-slate-700 min-h-[80px] sm:min-h-[90px] shadow-sm placeholder:text-slate-300"
+                      rows={3}
+                    />
+                  </div>
+                  
+                  <div className="w-full lg:w-[200px] flex flex-col gap-2 border-t lg:border-t-0 lg:border-l border-slate-200/50 pt-4 lg:pt-0 lg:pl-6">
+                    <div className="flex items-center gap-2 px-1">
+                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">総合判定</span>
+                    </div>
+                    <div className="relative group">
+                      <select
+                        value={judge}
+                        onChange={(e) => setJudge(e.target.value)}
+                        className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
+                      >
+                        <option value="判定しない">判定しない</option>
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4 4 4-4" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="mt-2 lg:mt-auto py-1 sm:py-2">
+                       <div className="text-[10px] text-slate-400 font-medium leading-tight italic">
+                         ※ 選択した判定は<br className="hidden lg:block"/>報告書に大きく印字されます。
+                       </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* テーブル本体 */}
@@ -495,10 +546,25 @@ function ResultsOutputContent() {
             
             <div className="flex-1"></div>
             
-            {/* 所見欄 */}
-            <div className="border border-slate-300 rounded-sm mt-4">
-              <div className="bg-slate-50 px-2 py-1 text-[8px] font-bold border-b border-slate-300 uppercase tracking-widest text-slate-500">所見</div>
-              <div className="min-h-[120px]"></div>
+            <div className="flex gap-4 mt-6 items-stretch">
+              {/* 所見欄 */}
+              <div className="border-2 border-slate-900 rounded-sm flex-[3] flex flex-col">
+                <div className="bg-slate-900 text-white px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em]">医師所見・判定理由</div>
+                <div className="p-3 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-900 flex-1 min-h-[140px] font-medium">
+                  {findings || "（特記事項なし）"}
+                </div>
+              </div>
+
+              {/* 総合判定 */}
+              <div className="border-2 border-slate-900 rounded-sm flex-1 flex flex-col min-w-[140px]">
+                <div className="bg-slate-900 text-white px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-center">総合判定</div>
+                <div className="flex-1 flex flex-col items-center justify-center p-4">
+                  <div className="text-[8px] font-bold text-slate-400 mb-2 uppercase tracking-tighter">Overall Judgment</div>
+                  <div className={`px-4 py-2 border-4 border-slate-900 rounded-lg flex items-center justify-center min-w-[100px]`}>
+                    <span className="text-2xl font-black text-slate-900 leading-none">{judge}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
