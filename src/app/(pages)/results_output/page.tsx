@@ -102,8 +102,18 @@ function ResultsOutputContent() {
       .from("kensa_item_master")
       .select(`
         *,
-        category:kensa_category_master (
+        category_info:kensa_category_master (
+          id,
           name
+        ),
+        valuetype_info:kensa_valuetype_master (
+          id,
+          name,
+          selectable,
+          kensa_select_item_master (
+            id,
+            text
+          )
         )
       `)
       .order("category_id", { ascending: true })
@@ -141,33 +151,53 @@ function ResultsOutputContent() {
     }
   };
 
-  const TableRow = ({ item }: { item: any }) => (
-    <tr className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors group">
-      <td className="py-3 px-4 text-sm font-semibold text-slate-700 bg-white border-r border-slate-100 sticky left-0 z-10 group-hover:bg-blue-50/30 transition-colors">
-        <div className="flex flex-col">
-          <span>{item.name}</span>
-          {item.unit && (
-            <span className="text-[10px] font-medium text-slate-400 mt-0.5 leading-none">
-              {item.unit}
-            </span>
-          )}
-        </div>
-      </td>
-      {historyData.map((h, i) => (
-        <td 
-          key={i} 
-          className={`py-3 px-4 text-center font-mono text-[13px] border-r border-slate-100 ${
-            i === 0 ? 'bg-yellow-50/30 font-bold text-yellow-800' : 'text-slate-600'
-          }`}
-        >
-          {h.results.get(item.id) || "-"}
+  const TableRow = ({ item }: { item: any }) => {
+    const formatValue = (h: any) => {
+      const val = h.results.get(item.id);
+      if (val === undefined || val === null) return "-";
+      
+      const typeInfo = item.valuetype_info;
+      if (typeInfo?.selectable && typeInfo?.kensa_select_item_master) {
+        // 数値に対応する選択肢のテキストを探す
+        const option = typeInfo.kensa_select_item_master.find((opt: any, index: number) => index === Number(val));
+        return option ? option.text : val;
+      }
+      
+      if (typeInfo?.name === "bool") {
+        return val === 1 || val === "1" ? "はい" : "いいえ";
+      }
+      
+      return val;
+    };
+
+    return (
+      <tr className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors group">
+        <td className="py-3 px-4 text-sm font-semibold text-slate-700 bg-white border-r border-slate-100 sticky left-0 z-10 group-hover:bg-blue-50/30 transition-colors">
+          <div className="flex flex-col">
+            <span>{item.name}</span>
+            {item.unit && (
+              <span className="text-[10px] font-medium text-slate-400 mt-0.5 leading-none">
+                {item.unit}
+              </span>
+            )}
+          </div>
         </td>
-      ))}
-      <td className="py-3 px-4 text-center text-slate-400 text-[11px] font-medium">
-        -
-      </td>
-    </tr>
-  );
+        {historyData.map((h, i) => (
+          <td 
+            key={i} 
+            className={`py-3 px-4 text-center font-mono text-[13px] border-r border-slate-100 ${
+              i === 0 ? 'bg-yellow-50/30 font-bold text-yellow-800' : 'text-slate-600'
+            }`}
+          >
+            {formatValue(h)}
+          </td>
+        ))}
+        <td className="py-3 px-4 text-center text-slate-400 text-[11px] font-medium">
+          -
+        </td>
+      </tr>
+    );
+  };
 
   const GroupHeader = ({ label }: { label: string }) => (
     <tr className="bg-slate-50/50 backdrop-blur-sm">
@@ -183,55 +213,74 @@ function ResultsOutputContent() {
     </tr>
   );
 
-  const PrintTable = ({ groups }: { groups: { categoryName: string, items: any[] }[] }) => (
-    <div className="flex-1 min-w-0">
-      <table className="w-full border-collapse border-t-2 border-slate-900 text-[9px] text-black">
-        <thead>
-          <tr className="bg-slate-50">
-            <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-8 font-bold bg-slate-100/50">分類</th>
-            <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-32 font-bold bg-slate-100/50">項目名</th>
-            {historyData.map((h, i) => (
-              <th key={i} className={`py-1 px-1 text-center border-b border-r border-slate-300 min-w-[45px] ${i === 0 ? 'bg-slate-100 font-bold' : 'font-medium'}`}>
-                <div className="scale-90">{h.recept_date.substring(5).replace(/-/g, '/')}</div>
-              </th>
-            ))}
-            <th className="py-1 px-1 text-center border-b border-slate-300 w-14 font-bold">基準値</th>
-          </tr>
-        </thead>
-        <tbody>
-          {groups.map((group, gIdx) => (
-            <React.Fragment key={gIdx}>
-              {group.items.map((item, iIdx) => (
-                <tr key={iIdx} className="border-b border-slate-100">
-                  {iIdx === 0 && (
-                    <td 
-                      rowSpan={group.items.length} 
-                      className="py-1 px-2 border-r border-slate-300 font-black text-[7px] uppercase tracking-tighter bg-slate-50/30"
-                      style={{ verticalAlign: 'middle', writingMode: 'vertical-lr' }}
-                    >
-                      {group.categoryName}
-                    </td>
-                  )}
-                  <td className="py-1 px-2 border-r border-slate-200 font-medium">
-                    <div className="flex justify-between items-baseline gap-1">
-                      <span>{item.name}</span>
-                      {item.unit && <span className="text-[7px] font-normal">{item.unit}</span>}
-                    </div>
-                  </td>
-                  {historyData.map((h, i) => (
-                    <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold' : ''}`}>
-                      {h.results.get(item.id) || "-"}
-                    </td>
-                  ))}
-                  <td className="py-1 px-1 text-center font-mono">-</td>
-                </tr>
+  const PrintTable = ({ groups }: { groups: { categoryName: string, items: any[] }[] }) => {
+    const formatValue = (h: any, item: any) => {
+      const val = h.results.get(item.id);
+      if (val === undefined || val === null) return "-";
+      
+      const typeInfo = item.valuetype_info;
+      if (typeInfo?.selectable && typeInfo?.kensa_select_item_master) {
+        const option = typeInfo.kensa_select_item_master.find((opt: any, index: number) => index === Number(val));
+        return option ? option.text : val;
+      }
+      
+      if (typeInfo?.name === "bool") {
+        return val === 1 || val === "1" ? "はい" : "いいえ";
+      }
+      
+      return val;
+    };
+
+    return (
+      <div className="flex-1 min-w-0">
+        <table className="w-full border-collapse border-t-2 border-slate-900 text-[9px] text-black">
+          <thead>
+            <tr className="bg-slate-50">
+              <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-8 font-bold bg-slate-100/50">分類</th>
+              <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-32 font-bold bg-slate-100/50">項目名</th>
+              {historyData.map((h, i) => (
+                <th key={i} className={`py-1 px-1 text-center border-b border-r border-slate-300 min-w-[45px] ${i === 0 ? 'bg-slate-100 font-bold' : 'font-medium'}`}>
+                  <div className="scale-90">{h.recept_date.substring(5).replace(/-/g, '/')}</div>
+                </th>
               ))}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+              <th className="py-1 px-1 text-center border-b border-slate-300 w-14 font-bold">基準値</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group, gIdx) => (
+              <React.Fragment key={gIdx}>
+                {group.items.map((item, iIdx) => (
+                  <tr key={iIdx} className="border-b border-slate-100">
+                    {iIdx === 0 && (
+                      <td 
+                        rowSpan={group.items.length} 
+                        className="py-1 px-2 border-r border-slate-300 font-black text-[7px] uppercase tracking-tighter bg-slate-50/30"
+                        style={{ verticalAlign: 'middle', writingMode: 'vertical-lr' }}
+                      >
+                        {group.categoryName}
+                      </td>
+                    )}
+                    <td className="py-1 px-2 border-r border-slate-200 font-medium">
+                      <div className="flex justify-between items-baseline gap-1">
+                        <span>{item.name}</span>
+                        {item.unit && <span className="text-[7px] font-normal">{item.unit}</span>}
+                      </div>
+                    </td>
+                    {historyData.map((h, i) => (
+                      <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold' : ''}`}>
+                        {formatValue(h, item)}
+                      </td>
+                    ))}
+                    <td className="py-1 px-1 text-center font-mono">-</td>
+                  </tr>
+                ))}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   const groupedData = React.useMemo(() => {
     const presentItemIds = new Set();
