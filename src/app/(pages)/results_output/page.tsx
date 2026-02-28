@@ -49,10 +49,6 @@ function ResultsOutputContent() {
   }, [searchParams]);
 
   const handleReceptSearch = async () => {
-    if (!patientId) {
-      setErrors((prev) => ({ ...prev, patientId: "先に患者IDを入力してください" }));
-      return;
-    }
     setShowReceptDialog(true);
   };
 
@@ -549,20 +545,9 @@ function ResultsOutputContent() {
             <div className="flex gap-4 mt-6 items-stretch">
               {/* 所見欄 */}
               <div className="border-2 border-slate-900 rounded-sm flex-[3] flex flex-col">
-                <div className="bg-slate-900 text-white px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em]">医師所見・判定理由</div>
+                <div className="bg-slate-900 text-white px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em]">医師所見</div>
                 <div className="p-3 text-[11px] leading-relaxed whitespace-pre-wrap text-slate-900 flex-1 min-h-[140px] font-medium">
                   {findings || "（特記事項なし）"}
-                </div>
-              </div>
-
-              {/* 総合判定 */}
-              <div className="border-2 border-slate-900 rounded-sm flex-1 flex flex-col min-w-[140px]">
-                <div className="bg-slate-900 text-white px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-center">総合判定</div>
-                <div className="flex-1 flex flex-col items-center justify-center p-4">
-                  <div className="text-[8px] font-bold text-slate-400 mb-2 uppercase tracking-tighter">Overall Judgment</div>
-                  <div className={`px-4 py-2 border-4 border-slate-900 rounded-lg flex items-center justify-center min-w-[100px]`}>
-                    <span className="text-2xl font-black text-slate-900 leading-none">{judge}</span>
-                  </div>
                 </div>
               </div>
             </div>

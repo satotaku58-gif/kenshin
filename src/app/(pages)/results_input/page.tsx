@@ -40,10 +40,6 @@ function ResultsInputContent() {
   }, [searchParams, isLoaded]);
 
   const handleReceptSearch = async () => {
-    if (!patientId) {
-      setErrors((prev) => ({ ...prev, patientId: "先に患者IDを入力してください" }));
-      return;
-    }
     setShowReceptDialog(true);
   };
 
