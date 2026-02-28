@@ -8,24 +8,28 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { fetchPatientBasic, validateReception } from "../../api/receptApi";
+import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
   const searchParams = useSearchParams();
+  const {
+    patientId, setPatientId,
+    patientName, setPatientName,
+    patientBirth, setPatientBirth,
+    patientGender, setPatientGender,
+    receptionDate, setReceptionDate,
+    receptionId, setReceptionId,
+    showResults, setShowResults,
+    historyData, setHistoryData,
+    itemMasters, setItemMasters,
+    findings, setFindings,
+    judge, setJudge,
+    isLoaded
+  } = useResultsOutput();
 
-  const [patientId, setPatientId] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [patientBirth, setPatientBirth] = useState("");
-  const [patientGender, setPatientGender] = useState("");
-  const [receptionDate, setReceptionDate] = useState(new Date().toISOString().split('T')[0]);
-  const [receptionId, setReceptionId] = useState("");
-  const [showResults, setShowResults] = useState(false);
-  const [historyData, setHistoryData] = useState<any[]>([]);
-  const [itemMasters, setItemMasters] = useState<any[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showDialog, setShowDialog] = useState(false);
   const [showReceptDialog, setShowReceptDialog] = useState(false);
-  const [findings, setFindings] = useState("");
-  const [judge, setJudge] = useState("判定しない");
 
   const calculateAge = (birthDate: string) => {
     if (!birthDate) return "";
@@ -40,13 +44,14 @@ function ResultsOutputContent() {
   };
 
   useEffect(() => {
+    if (!isLoaded) return;
     const pId = searchParams.get("patientId");
     const rId = searchParams.get("receptId");
     const rDate = searchParams.get("receptDate");
     if (pId) setPatientId(pId);
     if (rId) setReceptionId(rId);
     if (rDate) setReceptionDate(rDate);
-  }, [searchParams]);
+  }, [searchParams, isLoaded]);
 
   const handleReceptSearch = async () => {
     setShowReceptDialog(true);
