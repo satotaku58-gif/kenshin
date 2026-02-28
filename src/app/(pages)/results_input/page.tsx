@@ -4,7 +4,7 @@ import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import CommonStartForm from "../../component/CommonStartForm";
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useResultsInput } from "../../context/ResultsInputContext";
@@ -83,6 +83,10 @@ function ResultsInputContent() {
       .from("kensa_item_master")
       .select(`
         *,
+        category_info:kensa_category_master (
+          id,
+          name
+        ),
         valuetype_info:kensa_valuetype_master (
           id,
           name,
@@ -130,6 +134,7 @@ function ResultsInputContent() {
 
       return {
         ...item,
+        categoryName: item.category_info?.name || "その他",
         typeName: typeInfo?.name || "unknown",
         isSelectable,
         options,
@@ -357,33 +362,50 @@ function ResultsInputContent() {
                         </td>
                       </tr>
                     ) : (
-                      examinationItems.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-bold text-slate-700">{item.name}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 justify-start">
-                              <div className="w-48 flex items-center gap-2">
-                                {renderInput(item)}
-                              </div>
-                              <div className="w-20">
-                                {item.unit && (
-                                  <span className="text-sm text-slate-500 font-medium">{item.unit}</span>
-                                )}
-                              </div>
-                              {item.isExisting && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 border border-green-100 rounded-lg animate-in fade-in zoom-in duration-300">
-                                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                  <span className="text-[11px] font-bold whitespace-nowrap">入力済み</span>
+                      examinationItems.map((item, index) => {
+                        const showCategoryHeader = index === 0 || item.categoryName !== examinationItems[index - 1].categoryName;
+                        return (
+                          <React.Fragment key={item.id}>
+                            {showCategoryHeader && (
+                              <tr className="bg-slate-50/50">
+                                <td colSpan={2} className="px-6 py-2.5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
+                                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                                      {item.categoryName}
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            <tr className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="text-sm font-bold text-slate-700">{item.name}</div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2 justify-start">
+                                  <div className="w-48 flex items-center gap-2">
+                                    {renderInput(item)}
+                                  </div>
+                                  <div className="w-20">
+                                    {item.unit && (
+                                      <span className="text-sm text-slate-500 font-medium">{item.unit}</span>
+                                    )}
+                                  </div>
+                                  {item.isExisting && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 border border-green-100 rounded-lg animate-in fade-in zoom-in duration-300">
+                                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                      </svg>
+                                      <span className="text-[11px] font-bold whitespace-nowrap">入力済み</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
