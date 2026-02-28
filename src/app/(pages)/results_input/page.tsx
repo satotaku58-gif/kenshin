@@ -94,6 +94,7 @@ function ResultsInputContent() {
         )
       `)
       .in("id", itemIds)
+      .order("category_id", { ascending: true })
       .order("id", { ascending: true });
 
     if (itemError || !itemMaster) {
