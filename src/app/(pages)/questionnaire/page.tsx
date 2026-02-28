@@ -8,7 +8,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
-import { fetchPatientBasic, validateReception } from "../../api/receptApi";
+import { fetchPatientBasic, fetchReception } from "../../api/fetchDataBaseApi";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -116,7 +116,7 @@ function QuestionnaireContent() {
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptData = await validateReception(patientId, receptionDate, receptionId);
+      const receptData = await fetchReception(patientId, receptionDate, receptionId);
       setReceptInternalId(receptData.id);
       
       setErrors({});

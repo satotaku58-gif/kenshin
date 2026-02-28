@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
-import { fetchPatientBasic, validateReception } from "../../api/receptApi";
+import { fetchPatientBasic, fetchReception, fetchKensaItemData } from "../../api/fetchDataBaseApi";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
@@ -78,7 +78,7 @@ function ResultsOutputContent() {
       setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
 
       // 受付存在チェック (整合性の確認のみ)
-      await validateReception(patientId, receptionDate, receptionId);
+      await fetchReception(patientId, receptionDate, receptionId);
 
       // 過去の受診履歴を最大4件取得（今回分を含む）
       const { data: receptHistory, error: historyError } = await supabase
@@ -97,30 +97,6 @@ function ResultsOutputContent() {
 
     const receptIds = receptHistory.map(r => r.id);
 
-    // 項目マスターをカテゴリ情報付きで取得
-    const { data: masters, error: masterError } = await supabase
-      .from("kensa_item_master")
-      .select(`
-        *,
-        category_info:kensa_category_master (
-          id,
-          name
-        ),
-        valuetype_info:kensa_valuetype_master (
-          id,
-          name,
-          selectable,
-          kensa_select_item_master (
-            id,
-            text
-          )
-        )
-      `)
-      .order("category_id", { ascending: true })
-      .order("id", { ascending: true });
-
-    if (masters) setItemMasters(masters);
-
     // 全履歴分の結果を取得
     const { data: results, error: resultsError } = await supabase
       .from("kensa_result")
@@ -130,6 +106,10 @@ function ResultsOutputContent() {
     if (resultsError) {
       console.error("Results fetch error:", resultsError);
     }
+
+    // 項目マスターを取得
+    const masters = await fetchKensaItemData();
+    if (masters) setItemMasters(masters);
 
     // データを整形
     const historyWithResults = receptHistory.map(r => {

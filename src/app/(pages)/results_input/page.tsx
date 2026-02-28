@@ -8,7 +8,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useResultsInput } from "../../context/ResultsInputContext";
-import { fetchPatientBasic, validateReception } from "../../api/receptApi";
+import { fetchPatientBasic, fetchReception, fetchKensaItemData } from "../../api/fetchDataBaseApi";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
@@ -61,7 +61,7 @@ function ResultsInputContent() {
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptData = await validateReception(patientId, receptionDate, receptionId);
+      const receptData = await fetchReception(patientId, receptionDate, receptionId);
       setReceptPk(receptData.id);
 
       // 2. コースに紐づく検査項目を取得
@@ -79,33 +79,7 @@ function ResultsInputContent() {
     const itemIds = courseItems.map(ci => ci.item_id);
 
     // 3. 検査項目のマスター情報と、リレーション先のデータ型・選択肢を取得
-    const { data: itemMaster, error: itemError } = await supabase
-      .from("kensa_item_master")
-      .select(`
-        *,
-        category_info:kensa_category_master (
-          id,
-          name
-        ),
-        valuetype_info:kensa_valuetype_master (
-          id,
-          name,
-          selectable,
-          kensa_select_item_master (
-            id,
-            text
-          )
-        )
-      `)
-      .in("id", itemIds)
-      .order("category_id", { ascending: true })
-      .order("id", { ascending: true });
-
-    if (itemError || !itemMaster) {
-      console.error("Master fetch error:", itemError);
-      setErrors({ receptionId: "マスター情報を読み取れませんでした" });
-      return;
-    }
+    const itemMaster = await fetchKensaItemData(itemIds);
 
     // 4. すでに保存されている結果があれば取得
     const { data: existingResults, error: resultsError } = await supabase
