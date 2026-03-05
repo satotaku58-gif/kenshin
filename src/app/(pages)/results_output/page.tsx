@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
-import { fetchPatientBasic, fetchReception, fetchKensaItemData } from "../../api/fetchDataBaseApi";
+import { fetchPatientBasic, fetchReception, fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges } from "../../api/fetchDataBaseApi";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
@@ -24,6 +24,9 @@ function ResultsOutputContent() {
     itemMasters, setItemMasters,
     findings, setFindings,
     judge, setJudge,
+    referenceSets, setReferenceSets,
+    selectedReferenceSetId, setSelectedReferenceSetId,
+    referenceRanges, setReferenceRanges,
     isLoaded
   } = useResultsOutput();
 
@@ -55,6 +58,20 @@ function ResultsOutputContent() {
 
   const handleReceptSearch = async () => {
     setShowReceptDialog(true);
+  };
+
+  const handleReferenceSetChange = async (setId: string) => {
+    setSelectedReferenceSetId(setId);
+    if (!setId) {
+      setReferenceRanges([]);
+      return;
+    }
+    try {
+      const ranges = await fetchKensaReferenceRanges(Number(setId));
+      setReferenceRanges(ranges);
+    } catch (err) {
+      console.error("Failed to fetch reference ranges:", err);
+    }
   };
 
   const handleStart = async () => {
@@ -111,6 +128,16 @@ function ResultsOutputContent() {
     const masters = await fetchKensaItemData();
     if (masters) setItemMasters(masters);
 
+    // 基準値セットマスターを取得
+    const refSets = await fetchKensaReferenceSetMaster();
+    if (refSets) setReferenceSets(refSets);
+
+    // すでに基準値セットが選択されている場合は範囲データも取得
+    if (selectedReferenceSetId) {
+      const ranges = await fetchKensaReferenceRanges(Number(selectedReferenceSetId));
+      if (ranges) setReferenceRanges(ranges);
+    }
+
     // データを整形
     const historyWithResults = receptHistory.map(r => {
       const dayResults = results?.filter(res => res.recept_id === r.id) || [];
@@ -150,6 +177,9 @@ function ResultsOutputContent() {
       return val;
     };
 
+    const range = referenceRanges.find(r => r.item_id === item.id);
+    const rangeDisplay = range ? `${range.low_value} ～ ${range.high_value}` : "-";
+
     return (
       <tr className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors group">
         <td className="py-3 px-4 text-sm font-semibold text-slate-700 bg-white border-r border-slate-100 sticky left-0 z-10 group-hover:bg-blue-50/30 transition-colors">
@@ -172,8 +202,8 @@ function ResultsOutputContent() {
             {formatValue(h)}
           </td>
         ))}
-        <td className="py-3 px-4 text-center text-slate-400 text-[11px] font-medium">
-          -
+        <td className="py-3 px-4 text-center text-slate-600 text-[11px] font-medium">
+          {rangeDisplay}
         </td>
       </tr>
     );
@@ -229,31 +259,36 @@ function ResultsOutputContent() {
           <tbody>
             {groups.map((group, gIdx) => (
               <React.Fragment key={gIdx}>
-                {group.items.map((item, iIdx) => (
-                  <tr key={iIdx} className="border-b border-slate-100">
-                    {iIdx === 0 && (
-                      <td 
-                        rowSpan={group.items.length} 
-                        className="py-1 px-2 border-r border-slate-300 font-black text-[7px] uppercase tracking-tighter bg-slate-50/30"
-                        style={{ verticalAlign: 'middle', writingMode: 'vertical-lr' }}
-                      >
-                        {group.categoryName}
+                {group.items.map((item, iIdx) => {
+                  const range = referenceRanges.find(r => r.item_id === item.id);
+                  const rangeDisplay = range ? `${range.low_value}～${range.high_value}` : "-";
+                  
+                  return (
+                    <tr key={iIdx} className="border-b border-slate-100">
+                      {iIdx === 0 && (
+                        <td 
+                          rowSpan={group.items.length} 
+                          className="py-1 px-2 border-r border-slate-300 font-black text-[7px] uppercase tracking-tighter bg-slate-50/30"
+                          style={{ verticalAlign: 'middle', writingMode: 'vertical-lr' }}
+                        >
+                          {group.categoryName}
+                        </td>
+                      )}
+                      <td className="py-1 px-2 border-r border-slate-200 font-medium">
+                        <div className="flex justify-between items-baseline gap-1">
+                          <span>{item.name}</span>
+                          {item.unit && <span className="text-[7px] font-normal">{item.unit}</span>}
+                        </div>
                       </td>
-                    )}
-                    <td className="py-1 px-2 border-r border-slate-200 font-medium">
-                      <div className="flex justify-between items-baseline gap-1">
-                        <span>{item.name}</span>
-                        {item.unit && <span className="text-[7px] font-normal">{item.unit}</span>}
-                      </div>
-                    </td>
-                    {historyData.map((h, i) => (
-                      <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold' : ''}`}>
-                        {formatValue(h, item)}
-                      </td>
-                    ))}
-                    <td className="py-1 px-1 text-center font-mono">-</td>
-                  </tr>
-                ))}
+                      {historyData.map((h, i) => (
+                        <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold' : ''}`}>
+                          {formatValue(h, item)}
+                        </td>
+                      ))}
+                      <td className="py-1 px-1 text-center font-mono text-[8px]">{rangeDisplay}</td>
+                    </tr>
+                  );
+                })}
               </React.Fragment>
             ))}
           </tbody>
@@ -429,15 +464,20 @@ function ResultsOutputContent() {
                       <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">総合判定</span>
+                      <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">基準値</span>
                     </div>
                     <div className="relative group">
                       <select
-                        value={judge}
-                        onChange={(e) => setJudge(e.target.value)}
+                        value={selectedReferenceSetId}
+                        onChange={(e) => handleReferenceSetChange(e.target.value)}
                         className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
                       >
-                        <option value="判定しない">判定しない</option>
+                        <option value="">未設定</option>
+                        {referenceSets.map((set) => (
+                          <option key={set.id} value={set.id.toString()}>
+                            {set.name}
+                          </option>
+                        ))}
                       </select>
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -447,7 +487,7 @@ function ResultsOutputContent() {
                     </div>
                     <div className="mt-2 lg:mt-auto py-1 sm:py-2">
                        <div className="text-[10px] text-slate-400 font-medium leading-tight italic">
-                         ※ 選択した判定は<br className="hidden lg:block"/>報告書に大きく印字されます。
+                         ※ 選択した基準値は<br className="hidden lg:block"/>報告書に大きく印字されます。
                        </div>
                     </div>
                   </div>

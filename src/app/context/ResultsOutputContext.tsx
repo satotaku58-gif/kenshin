@@ -14,6 +14,9 @@ interface ResultsOutputState {
   itemMasters: any[];
   findings: string;
   judge: string;
+  referenceSets: any[];
+  selectedReferenceSetId: string;
+  referenceRanges: any[];
 }
 
 interface ResultsOutputContextType extends ResultsOutputState {
@@ -28,6 +31,9 @@ interface ResultsOutputContextType extends ResultsOutputState {
   setItemMasters: (val: any[]) => void;
   setFindings: (val: string) => void;
   setJudge: (val: string) => void;
+  setReferenceSets: (val: any[]) => void;
+  setSelectedReferenceSetId: (val: string) => void;
+  setReferenceRanges: (val: any[]) => void;
   resetState: () => void;
   isLoaded: boolean;
 }
@@ -44,6 +50,9 @@ const initialState: ResultsOutputState = {
   itemMasters: [],
   findings: "",
   judge: "判定しない",
+  referenceSets: [],
+  selectedReferenceSetId: "",
+  referenceRanges: [],
 };
 
 const ResultsOutputContext = createContext<ResultsOutputContextType | undefined>(undefined);
@@ -84,6 +93,9 @@ export function ResultsOutputProvider({ children }: { children: ReactNode }) {
   const setItemMasters = (itemMasters: any[]) => setState(prev => ({ ...prev, itemMasters }));
   const setFindings = (findings: string) => setState(prev => ({ ...prev, findings }));
   const setJudge = (judge: string) => setState(prev => ({ ...prev, judge }));
+  const setReferenceSets = (referenceSets: any[]) => setState(prev => ({ ...prev, referenceSets }));
+  const setSelectedReferenceSetId = (selectedReferenceSetId: string) => setState(prev => ({ ...prev, selectedReferenceSetId }));
+  const setReferenceRanges = (referenceRanges: any[]) => setState(prev => ({ ...prev, referenceRanges }));
 
   const resetState = () => {
     setState(initialState);
@@ -105,6 +117,9 @@ export function ResultsOutputProvider({ children }: { children: ReactNode }) {
         setItemMasters,
         setFindings,
         setJudge,
+        setReferenceSets,
+        setSelectedReferenceSetId,
+        setReferenceRanges,
         resetState,
         isLoaded,
       }}

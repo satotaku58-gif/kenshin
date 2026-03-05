@@ -74,3 +74,35 @@ export const fetchKensaItemData = async (itemIds?: number[]) => {
 
   return data;
 };
+
+/**
+ * 検査基準値セットマスターを取得する
+ */
+export const fetchKensaReferenceSetMaster = async () => {
+  const { data, error } = await supabase
+    .from("kensa_reference_set_master")
+    .select("id, name")
+    .order("id", { ascending: true });
+
+  if (error || !data) {
+    throw new Error("基準値セットマスターを読み取れませんでした");
+  }
+
+  return data;
+};
+
+/**
+ * 基準値セットIDに関連する全項目ごとの基準値範囲を取得する
+ */
+export const fetchKensaReferenceRanges = async (setId: number) => {
+  const { data, error } = await supabase
+    .from("kensa_reference_range_master")
+    .select("item_id, low_value, high_value")
+    .eq("set_id", setId);
+
+  if (error || !data) {
+    throw new Error("基準値範囲マスターを読み取れませんでした");
+  }
+
+  return data;
+};
