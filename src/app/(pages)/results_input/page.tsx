@@ -57,7 +57,12 @@ function ResultsInputContent() {
 
     try {
       // 患者存在チェック
-      const patientData = await fetchPatientBasic(patientId);
+      const response = await fetch(`/api/patient/${patientId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "患者情報の取得に失敗しました");
+      }
+      const patientData = await response.json();
       setPatientName(patientData.name);
 
       // 受付存在チェック
