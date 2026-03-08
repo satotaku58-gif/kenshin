@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
       allowedOrigins: ["*.pages.dev", "*.cloudflare.com"],
     },
   },
+  output: "standalone",
 };
 
 export default nextConfig;
