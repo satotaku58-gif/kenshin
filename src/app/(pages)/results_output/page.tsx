@@ -304,8 +304,11 @@ function ResultsOutputContent() {
 
   const groupedData = React.useMemo(() => {
     const presentItemIds = new Set();
-    historyData.forEach(h => {
-      h.results.forEach((_: any, itemId: any) => presentItemIds.add(itemId));
+    historyData.forEach((h: any) => {
+      // Mapオブジェクト（results）からキー（itemId）を抽出
+      if (h.results && typeof h.results.forEach === 'function') {
+        h.results.forEach((_: any, itemId: any) => presentItemIds.add(itemId));
+      }
     });
 
     const visibleItems = itemMasters.filter(item => presentItemIds.has(item.id));
