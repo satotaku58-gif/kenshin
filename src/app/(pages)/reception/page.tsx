@@ -4,7 +4,7 @@ import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchPatientBasic, fetchKensaCourses, createReception } from "@/lib/dbActions";
+import { createReception } from "@/lib/dbActions";
 
 function ReceptionContent() {
   const router = useRouter();
@@ -41,7 +41,12 @@ function ReceptionContent() {
   const fetchPatientInfo = async (id: string) => {
     if (!id) return;
     try {
-      const data = await fetchPatientBasic(id);
+      const response = await fetch(`/api/patient/${id}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "該当する患者が見つかりません");
+      }
+      const data = await response.json();
       setPatientInfo(data);
       setSearchError("");
     } catch (error: any) {
@@ -63,7 +68,9 @@ function ReceptionContent() {
     // 検査コース一覧をサーバーサイド経由で取得
     const fetchCoursesData = async () => {
       try {
-        const data = await fetchKensaCourses();
+        const response = await fetch("/api/kensa/courses");
+        if (!response.ok) throw new Error("検査コースの取得に失敗しました");
+        const data = await response.json();
         setCourseList(data);
       } catch (error: any) {
         console.error("kensa_course取得エラー:", error.message);

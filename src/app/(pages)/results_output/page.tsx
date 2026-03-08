@@ -6,7 +6,6 @@ import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { fetchPatientBasic, fetchReception, fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges, fetchPatientReceptionHistory, fetchKensaResultsByReceptIds } from "@/lib/dbActions";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
@@ -65,7 +64,9 @@ function ResultsOutputContent() {
       return;
     }
     try {
-      const ranges = await fetchKensaReferenceRanges(Number(setId));
+      const response = await fetch(`/api/kensa/reference-ranges?setId=${setId}`);
+      if (!response.ok) throw new Error("基準値範囲の取得に失敗しました");
+      const ranges = await response.json();
       setReferenceRanges(ranges);
     } catch (err) {
       console.error("Failed to fetch reference ranges:", err);
@@ -86,17 +87,27 @@ function ResultsOutputContent() {
 
     try {
       // 患者存在チェック
-      const patientData = await fetchPatientBasic(patientId);
+      const patientResponse = await fetch(`/api/patient/${patientId}`);
+      if (!patientResponse.ok) {
+        const errorData = await patientResponse.json();
+        throw new Error(errorData.error || "患者情報の取得に失敗しました");
+      }
+      const patientData = await patientResponse.json();
 
       setPatientName(patientData.name);
       setPatientBirth(patientData.birthdate || "");
       setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
 
       // 受付存在チェック (整合性の確認のみ)
-      await fetchReception(patientId, receptionDate, receptionId);
+      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
+      if (!receptResponse.ok) {
+        throw new Error("受付情報の取得に失敗しました");
+      }
 
       // 過去の受診履歴を最大4件取得（今回分を含む）
-      const receptHistory = await fetchPatientReceptionHistory(patientId, receptionDate, 4);
+      const historyResponse = await fetch(`/api/patient/${patientId}/history?baseDate=${receptionDate}&limit=4`);
+      if (!historyResponse.ok) throw new Error("受診履歴の取得に失敗しました");
+      const receptHistory = await historyResponse.json();
 
       if (!receptHistory || receptHistory.length === 0) {
         setErrors({ receptionId: "受診履歴が見つかりません" });
@@ -104,39 +115,48 @@ function ResultsOutputContent() {
         return;
       }
 
-      const receptIds = receptHistory.map(r => r.id);
+      const receptIds = receptHistory.map((r: any) => r.id);
 
-    // 全履歴分の結果を取得
-    const results = await fetchKensaResultsByReceptIds(receptIds);
+      // 全履歴分の結果を取得
+      const resultsResponse = await fetch(`/api/kensa/results?receptIds=${receptIds.join(",")}`);
+      if (!resultsResponse.ok) throw new Error("検査結果の取得に失敗しました");
+      const results = await resultsResponse.json();
 
-    // 項目マスターを取得
-    const masters = await fetchKensaItemData();
-    if (masters) setItemMasters(masters);
+      // 項目マスターを取得
+      const mastersResponse = await fetch(`/api/kensa/items`);
+      if (!mastersResponse.ok) throw new Error("項目マスターの取得に失敗しました");
+      const masters = await mastersResponse.json();
+      if (masters) setItemMasters(masters);
 
-    // 基準値セットマスターを取得
-    const refSets = await fetchKensaReferenceSetMaster();
-    if (refSets) setReferenceSets(refSets);
+      // 基準値セットマスターを取得
+      const refSetResponse = await fetch(`/api/kensa/reference-set`);
+      if (!refSetResponse.ok) throw new Error("基準値セットマスターの取得に失敗しました");
+      const refSets = await refSetResponse.json();
+      if (refSets) setReferenceSets(refSets);
 
-    // すでに基準値セットが選択されている場合は範囲データも取得
-    if (selectedReferenceSetId) {
-      const ranges = await fetchKensaReferenceRanges(Number(selectedReferenceSetId));
-      if (ranges) setReferenceRanges(ranges);
-    }
+      // すでに基準値セットが選択されている場合は範囲データも取得
+      if (selectedReferenceSetId) {
+        const response = await fetch(`/api/kensa/reference-ranges?setId=${selectedReferenceSetId}`);
+        if (response.ok) {
+          const ranges = await response.json();
+          setReferenceRanges(ranges);
+        }
+      }
 
-    // データを整形
-    const historyWithResults = receptHistory.map(r => {
-      const dayResults = results?.filter(res => res.recept_id === r.id) || [];
-      const resultMap = new Map();
-      dayResults.forEach(dr => resultMap.set(dr.kensa_item, dr.answer));
-      return {
-        ...r,
-        results: resultMap
-      };
-    });
+      // データを整形
+      const historyWithResults = receptHistory.map((r: any) => {
+        const dayResults = results?.filter((res: any) => res.recept_id === r.id) || [];
+        const resultMap = new Map();
+        dayResults.forEach((dr: any) => resultMap.set(dr.kensa_item, dr.answer));
+        return {
+          ...r,
+          results: resultMap
+        };
+      });
 
-    setHistoryData(historyWithResults); // 降順（左が最新）でセット
-    setErrors({});
-    setShowResults(true);
+      setHistoryData(historyWithResults); // 降順（左が最新）でセット
+      setErrors({});
+      setShowResults(true);
     } catch (err: any) {
       setErrors({ [err.message.includes("患者") ? "patientId" : "receptionId"]: err.message });
       setShowResults(false);

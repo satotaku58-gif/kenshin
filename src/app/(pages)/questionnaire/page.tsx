@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
-import { fetchMonsinMaster, saveMonsinResults, fetchPatientBasic, fetchReception } from "@/lib/dbActions";
+import { saveMonsinResults } from "@/lib/dbActions";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -48,18 +48,20 @@ function QuestionnaireContent() {
       if (questions.length > 0) return;
 
       try {
-        const { questions: qData, answers: aData } = await fetchMonsinMaster();
+        const response = await fetch("/api/monsin/master");
+        if (!response.ok) throw new Error("問診マスターの取得に失敗しました");
+        const { questions: qData, answers: aData } = await response.json();
 
         // 回答タイプごとに選択肢をグループ化
         const optionsMap: { [key: number]: { id: number; content: string }[] } = {};
-        aData.forEach((a) => {
+        aData.forEach((a: any) => {
           if (!optionsMap[a.type]) {
             optionsMap[a.type] = [];
           }
           optionsMap[a.type].push({ id: a.answer_id, content: a.content });
         });
 
-        const mappedQuestions = qData.map((q) => ({
+        const mappedQuestions = qData.map((q: any) => ({
           id: q.id,
           label: q.content,
           options: optionsMap[q.answer_type] || [],
@@ -104,11 +106,20 @@ function QuestionnaireContent() {
 
     try {
       // 患者存在チェック
-      const patientData = await fetchPatientBasic(patientId);
+      const patientResponse = await fetch(`/api/patient/${patientId}`);
+      if (!patientResponse.ok) {
+        const errorData = await patientResponse.json();
+        throw new Error(errorData.error || "患者情報の取得に失敗しました");
+      }
+      const patientData = await patientResponse.json();
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptData = await fetchReception(patientId, receptionDate, receptionId);
+      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
+      if (!receptResponse.ok) {
+        throw new Error("受付情報の取得に失敗しました");
+      }
+      const receptData = await receptResponse.json();
       setReceptInternalId(receptData.id);
       
       setErrors({});

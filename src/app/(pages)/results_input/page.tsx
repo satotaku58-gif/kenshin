@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useResultsInput } from "../../context/ResultsInputContext";
-import { fetchPatientBasic, fetchReception, fetchKensaItemData, fetchCourseItemIds, fetchKensaResultsByReceptIds, saveKensaResults } from "@/lib/dbActions";
+import { saveKensaResults } from "@/lib/dbActions";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
@@ -56,26 +56,42 @@ function ResultsInputContent() {
 
     try {
       // 患者存在チェック
-      const patientData = await fetchPatientBasic(patientId);
+      const patientResponse = await fetch(`/api/patient/${patientId}`);
+      if (!patientResponse.ok) {
+        const errorData = await patientResponse.json();
+        throw new Error(errorData.error || "患者情報の取得に失敗しました");
+      }
+      const patientData = await patientResponse.json();
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptData = await fetchReception(patientId, receptionDate, receptionId);
+      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
+      if (!receptResponse.ok) {
+        const errorData = await receptResponse.json();
+        throw new Error(errorData.error || "受付情報の取得に失敗しました");
+      }
+      const receptData = await receptResponse.json();
       setReceptPk(receptData.id);
 
       // 2. コースに紐づく検査項目を取得
-      const itemIds = await fetchCourseItemIds(receptData.course);
+      const courseItemsResponse = await fetch(`/api/kensa/course-items?courseId=${receptData.course}`);
+      if (!courseItemsResponse.ok) throw new Error("コース項目の取得に失敗しました");
+      const itemIds = await courseItemsResponse.json();
 
       // 3. 検査項目のマスター情報と、リレーション先のデータ型・選択肢を取得
-      const itemMaster = await fetchKensaItemData(itemIds);
+      const itemMasterResponse = await fetch(`/api/kensa/items?itemIds=${itemIds.join(",")}`);
+      if (!itemMasterResponse.ok) throw new Error("マスター情報の取得に失敗しました");
+      const itemMaster = await itemMasterResponse.json();
 
-    // 4. すでに保存されている結果があれば取得
-    const existingResults = await fetchKensaResultsByReceptIds([receptData.id]);
+      // 4. すでに保存されている結果があれば取得
+      const resultsResponse = await fetch(`/api/kensa/results?receptIds=${receptData.id}`);
+      if (!resultsResponse.ok) throw new Error("検査結果の取得に失敗しました");
+      const existingResults = await resultsResponse.json();
 
-    const resultsMap = new Map();
-    existingResults?.forEach(r => {
-      resultsMap.set(r.kensa_item, r.answer);
-    });
+      const resultsMap = new Map();
+      existingResults?.forEach((r: any) => {
+        resultsMap.set(r.kensa_item, r.answer);
+      });
 
     // 取得したデータを使いやすい形式に整形
     const itemsWithTypes = itemMaster.map((item: any) => {
