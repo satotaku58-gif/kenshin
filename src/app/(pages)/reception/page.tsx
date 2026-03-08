@@ -4,8 +4,7 @@ import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "../../supabaseClient";
-import { fetchKensaCourses } from "@/lib/dbActions";
+import { fetchPatientBasic, fetchKensaCourses, createReception } from "@/lib/dbActions";
 
 function ReceptionContent() {
   const router = useRouter();
@@ -42,15 +41,11 @@ function ReceptionContent() {
   const fetchPatientInfo = async (id: string) => {
     if (!id) return;
     try {
-      const response = await fetch(`/api/patient/${id}`);
-      if (!response.ok) {
-        throw new Error("該当する患者が見つかりません");
-      }
-      const data = await response.json();
+      const data = await fetchPatientBasic(id);
       setPatientInfo(data);
       setSearchError("");
     } catch (error: any) {
-      setSearchError(error.message);
+      setSearchError(error.message || "該当する患者が見つかりません");
       setPatientInfo(null);
     }
   };
@@ -97,46 +92,20 @@ function ReceptionContent() {
       return;
     }
 
-
-    // 受診日が一致するreceptのrecept_id最大値を取得
-    const { data: maxIdData, error: maxIdError } = await supabase
-      .from("recept")
-      .select("recept_id")
-      .eq("recept_date", receptDate)
-      .order("recept_id", { ascending: false })
-      .limit(1);
-
-    if (maxIdError) {
-      alert("受付IDの取得に失敗しました: " + maxIdError.message);
-      return;
-    }
-
-    let newReceptId = 1;
-    if (maxIdData && maxIdData.length > 0 && maxIdData[0].recept_id != null) {
-      newReceptId = Number(maxIdData[0].recept_id) + 1;
-    }
-
-    const { data, error } = await supabase.from("recept").insert([
-      {
-        recept_id: newReceptId,
-        patient_id: patientId,
-        recept_date: receptDate,
-        course: selectedCourse
-      }
-    ]).select();
-
-    if (error) {
-      console.error("受付登録エラー:", error);
-      alert("受付登録に失敗しました: " + error.message);
-    } else {
+    try {
+      const data = await createReception(patientId, receptDate, selectedCourse);
       alert("受付を完了しました。問診入力画面へ遷移します。");
-      const receptId = newReceptId;
+      
+      const receptId = data.recept_id;
       // 登録後に状態をリセット
       setPatientId("");
       setPatientInfo(null);
       setSelectedCourse("");
       // 問診入力画面へ遷移
       router.push(`/questionnaire?patientId=${patientId}&receptId=${receptId}&receptDate=${receptDate}`);
+    } catch (err: any) {
+      console.error("受付登録エラー:", err);
+      alert(err.message || "受付登録に失敗しました");
     }
   };
 

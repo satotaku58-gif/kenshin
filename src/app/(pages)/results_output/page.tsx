@@ -6,7 +6,7 @@ import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges, fetchPatientReceptionHistory, fetchKensaResultsByReceptIds } from "@/lib/dbActions";
+import { fetchPatientBasic, fetchReception, fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges, fetchPatientReceptionHistory, fetchKensaResultsByReceptIds } from "@/lib/dbActions";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
@@ -86,23 +86,14 @@ function ResultsOutputContent() {
 
     try {
       // 患者存在チェック
-      const response = await fetch(`/api/patient/${patientId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "患者情報の取得に失敗しました");
-      }
-      const patientData = await response.json();
+      const patientData = await fetchPatientBasic(patientId);
 
       setPatientName(patientData.name);
       setPatientBirth(patientData.birthdate || "");
       setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
 
       // 受付存在チェック (整合性の確認のみ)
-      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
-      if (!receptResponse.ok) {
-        const receptErrorData = await receptResponse.json();
-        throw new Error(receptErrorData.error || "受付情報の取得に失敗しました");
-      }
+      await fetchReception(patientId, receptionDate, receptionId);
 
       // 過去の受診履歴を最大4件取得（今回分を含む）
       const receptHistory = await fetchPatientReceptionHistory(patientId, receptionDate, 4);

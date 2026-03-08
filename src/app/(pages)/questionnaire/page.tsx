@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
-import { fetchMonsinMaster, saveMonsinResults } from "@/lib/dbActions";
+import { fetchMonsinMaster, saveMonsinResults, fetchPatientBasic, fetchReception } from "@/lib/dbActions";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -104,21 +104,11 @@ function QuestionnaireContent() {
 
     try {
       // 患者存在チェック
-      const response = await fetch(`/api/patient/${patientId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "患者情報の取得に失敗しました");
-      }
-      const patientData = await response.json();
+      const patientData = await fetchPatientBasic(patientId);
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
-      if (!receptResponse.ok) {
-        const receptErrorData = await receptResponse.json();
-        throw new Error(receptErrorData.error || "受付情報の取得に失敗しました");
-      }
-      const receptData = await receptResponse.json();
+      const receptData = await fetchReception(patientId, receptionDate, receptionId);
       setReceptInternalId(receptData.id);
       
       setErrors({});

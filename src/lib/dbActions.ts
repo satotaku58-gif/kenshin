@@ -234,3 +234,46 @@ export const fetchKensaCourses = async () => {
 
   return data;
 };
+
+/**
+ * 新規受付を登録する
+ * 受付日の最大IDを取得してインクリメントした新IDを割り当てる
+ */
+export const createReception = async (patientId: string, receptDate: string, courseId: string) => {
+  // 受付日が一致するreceptのrecept_id最大値を取得
+  const { data: maxIdData, error: maxIdError } = await supabase
+    .from("recept")
+    .select("recept_id")
+    .eq("recept_date", receptDate)
+    .order("recept_id", { ascending: false })
+    .limit(1);
+
+  if (maxIdError) {
+    throw new Error("受付IDの取得に失敗しました: " + maxIdError.message);
+  }
+
+  let newReceptId = 1;
+  if (maxIdData && maxIdData.length > 0 && maxIdData[0].recept_id != null) {
+    newReceptId = Number(maxIdData[0].recept_id) + 1;
+  }
+
+  const { data, error } = await supabase
+    .from("recept")
+    .insert([
+      {
+        recept_id: newReceptId,
+        patient_id: patientId,
+        recept_date: receptDate,
+        course: courseId
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("受付登録エラー:", error);
+    throw new Error("受付登録に失敗しました: " + error.message);
+  }
+
+  return { ...data, recept_id: newReceptId };
+};
