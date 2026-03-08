@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchPatientBasic } from "@/app/api/fetchDataBaseApi";
+import { fetchPatientBasic } from "@/lib/dbActions";
 
 export const runtime = "edge";
 

@@ -8,7 +8,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
-import { fetchPatientBasic } from "../../api/fetchDataBaseApi";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();

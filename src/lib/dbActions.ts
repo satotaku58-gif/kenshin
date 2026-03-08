@@ -1,6 +1,6 @@
 "use server";
 
-import { supabase } from "../supabaseClient";
+import { supabase } from "../app/supabaseClient";
 
 /**
  * 患者IDから患者基本情報を取得する

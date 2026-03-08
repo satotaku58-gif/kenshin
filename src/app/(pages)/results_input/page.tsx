@@ -8,7 +8,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useResultsInput } from "../../context/ResultsInputContext";
-import { fetchPatientBasic, fetchKensaItemData } from "../../api/fetchDataBaseApi";
+import { fetchKensaItemData } from "@/lib/dbActions";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();

@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
-import { fetchPatientBasic, fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges } from "../../api/fetchDataBaseApi";
+import { fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges } from "@/lib/dbActions";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
