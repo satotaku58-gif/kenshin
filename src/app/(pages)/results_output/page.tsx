@@ -7,7 +7,7 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
-import { fetchPatientBasic, fetchReception, fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges } from "../../api/fetchDataBaseApi";
+import { fetchPatientBasic, fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges } from "../../api/fetchDataBaseApi";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
@@ -100,7 +100,11 @@ function ResultsOutputContent() {
       setPatientGender(patientData.sex === 1 ? "男性" : patientData.sex === 2 ? "女性" : patientData.sex === 9 ? "その他" : "-");
 
       // 受付存在チェック (整合性の確認のみ)
-      await fetchReception(patientId, receptionDate, receptionId);
+      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
+      if (!receptResponse.ok) {
+        const receptErrorData = await receptResponse.json();
+        throw new Error(receptErrorData.error || "受付情報の取得に失敗しました");
+      }
 
       // 過去の受診履歴を最大4件取得（今回分を含む）
       const { data: receptHistory, error: historyError } = await supabase

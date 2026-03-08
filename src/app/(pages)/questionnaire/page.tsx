@@ -8,7 +8,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
-import { fetchPatientBasic, fetchReception } from "../../api/fetchDataBaseApi";
+import { fetchPatientBasic } from "../../api/fetchDataBaseApi";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -121,7 +121,12 @@ function QuestionnaireContent() {
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptData = await fetchReception(patientId, receptionDate, receptionId);
+      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
+      if (!receptResponse.ok) {
+        const receptErrorData = await receptResponse.json();
+        throw new Error(receptErrorData.error || "受付情報の取得に失敗しました");
+      }
+      const receptData = await receptResponse.json();
       setReceptInternalId(receptData.id);
       
       setErrors({});

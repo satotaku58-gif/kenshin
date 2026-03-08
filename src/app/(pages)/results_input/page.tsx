@@ -8,7 +8,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
 import { useResultsInput } from "../../context/ResultsInputContext";
-import { fetchPatientBasic, fetchReception, fetchKensaItemData } from "../../api/fetchDataBaseApi";
+import { fetchPatientBasic, fetchKensaItemData } from "../../api/fetchDataBaseApi";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
@@ -66,7 +66,12 @@ function ResultsInputContent() {
       setPatientName(patientData.name);
 
       // 受付存在チェック
-      const receptData = await fetchReception(patientId, receptionDate, receptionId);
+      const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
+      if (!receptResponse.ok) {
+        const receptErrorData = await receptResponse.json();
+        throw new Error(receptErrorData.error || "受付情報の取得に失敗しました");
+      }
+      const receptData = await receptResponse.json();
       setReceptPk(receptData.id);
 
       // 2. コースに紐づく検査項目を取得
