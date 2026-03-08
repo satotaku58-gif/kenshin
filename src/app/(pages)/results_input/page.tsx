@@ -6,9 +6,8 @@ import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabase } from "../../supabaseClient";
 import { useResultsInput } from "../../context/ResultsInputContext";
-import { fetchKensaItemData } from "@/lib/dbActions";
+import { fetchKensaItemData, fetchCourseItemIds, fetchKensaResultsByReceptIds, saveKensaResults } from "@/lib/dbActions";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
@@ -75,32 +74,13 @@ function ResultsInputContent() {
       setReceptPk(receptData.id);
 
       // 2. コースに紐づく検査項目を取得
-      const { data: courseItems, error: courseItemsError } = await supabase
-        .from("kensa_course_items")
-        .select("item_id")
-        .eq("course_id", receptData.course);
+      const itemIds = await fetchCourseItemIds(receptData.course);
 
-    if (courseItemsError || !courseItems) {
-      console.error("Course items fetch error:", courseItemsError);
-      setErrors({ receptionId: "コース項目を読み取れませんでした" });
-      return;
-    }
-
-    const itemIds = courseItems.map(ci => ci.item_id);
-
-    // 3. 検査項目のマスター情報と、リレーション先のデータ型・選択肢を取得
-    const itemMaster = await fetchKensaItemData(itemIds);
+      // 3. 検査項目のマスター情報と、リレーション先のデータ型・選択肢を取得
+      const itemMaster = await fetchKensaItemData(itemIds);
 
     // 4. すでに保存されている結果があれば取得
-    const { data: existingResults, error: resultsError } = await supabase
-      .from("kensa_result")
-      .select("kensa_item, answer")
-      .eq("recept_id", receptData.id);
-
-    if (resultsError) {
-      console.error("Existing results fetch error:", resultsError);
-      // 結果の取得失敗は致命的ではないので続行
-    }
+    const existingResults = await fetchKensaResultsByReceptIds([receptData.id]);
 
     const resultsMap = new Map();
     existingResults?.forEach(r => {
@@ -187,12 +167,8 @@ function ResultsInputContent() {
         return;
       }
 
-      // kensa_result テーブルへ保存 (upsertを使用)
-      const { error } = await supabase
-        .from("kensa_result")
-        .upsert(resultsToSave, { onConflict: "recept_id,kensa_item" });
-
-      if (error) throw error;
+      // kensa_result テーブルへ保存
+      await saveKensaResults(resultsToSave);
 
       setSaveMessage({ text: "検査結果を保存しました。", type: "success" });
     } catch (err: any) {

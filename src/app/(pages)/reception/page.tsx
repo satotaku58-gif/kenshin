@@ -5,6 +5,7 @@ import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../supabaseClient";
+import { fetchKensaCourses } from "@/lib/dbActions";
 
 function ReceptionContent() {
   const router = useRouter();
@@ -40,16 +41,17 @@ function ReceptionContent() {
 
   const fetchPatientInfo = async (id: string) => {
     if (!id) return;
-    const { data, error } = await supabase
-      .from("patient_basic")
-      .select("*")
-      .eq("id", id)
-      .single();
-    if (error || !data) {
-      setSearchError("該当する患者が見つかりません");
-      setPatientInfo(null);
-    } else {
+    try {
+      const response = await fetch(`/api/patient/${id}`);
+      if (!response.ok) {
+        throw new Error("該当する患者が見つかりません");
+      }
+      const data = await response.json();
       setPatientInfo(data);
+      setSearchError("");
+    } catch (error: any) {
+      setSearchError(error.message);
+      setPatientInfo(null);
     }
   };
 
@@ -63,36 +65,24 @@ function ReceptionContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    // 検査コース一覧をSupabaseから取得
-    const fetchCourses = async () => {
-      const { data, error } = await supabase.from("kensa_course").select("id, name");
-      if (error) {
-        console.error("kensa_course取得エラー:", error.message, error.details);
-        setCourseList([]);
-      } else if (data) {
+    // 検査コース一覧をサーバーサイド経由で取得
+    const fetchCoursesData = async () => {
+      try {
+        const data = await fetchKensaCourses();
         setCourseList(data);
-      } else {
+      } catch (error: any) {
+        console.error("kensa_course取得エラー:", error.message);
         setCourseList([]);
       }
     };
-    fetchCourses();
+    fetchCoursesData();
   }, []);
 
   const handleBlur = async () => {
     setPatientInfo(null);
     setSearchError("");
     if (!patientId) return;
-    const { data, error } = await supabase
-      .from("patient_basic")
-      .select("*")
-      .eq("id", patientId)
-      .single();
-    if (error || !data) {
-      setSearchError("該当する患者が見つかりません");
-      setPatientInfo(null);
-    } else {
-      setPatientInfo(data);
-    }
+    await fetchPatientInfo(patientId);
   };
 
   const handleReception = async () => {

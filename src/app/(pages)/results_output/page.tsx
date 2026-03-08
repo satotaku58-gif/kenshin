@@ -6,8 +6,7 @@ import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabase } from "../../supabaseClient";
-import { fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges } from "@/lib/dbActions";
+import { fetchKensaItemData, fetchKensaReferenceSetMaster, fetchKensaReferenceRanges, fetchPatientReceptionHistory, fetchKensaResultsByReceptIds } from "@/lib/dbActions";
 import { useResultsOutput } from "../../context/ResultsOutputContext";
 
 function ResultsOutputContent() {
@@ -23,7 +22,6 @@ function ResultsOutputContent() {
     historyData, setHistoryData,
     itemMasters, setItemMasters,
     findings, setFindings,
-    judge, setJudge,
     referenceSets, setReferenceSets,
     selectedReferenceSetId, setSelectedReferenceSetId,
     referenceRanges, setReferenceRanges,
@@ -107,31 +105,18 @@ function ResultsOutputContent() {
       }
 
       // 過去の受診履歴を最大4件取得（今回分を含む）
-      const { data: receptHistory, error: historyError } = await supabase
-        .from("recept")
-        .select("id, recept_id, recept_date")
-        .eq("patient_id", patientId)
-        .lte("recept_date", receptionDate) // 今回の受診日以前
-        .order("recept_date", { ascending: false })
-        .limit(4);
+      const receptHistory = await fetchPatientReceptionHistory(patientId, receptionDate, 4);
 
-    if (historyError || !receptHistory || receptHistory.length === 0) {
-      setErrors({ receptionId: "受診履歴が見つかりません" });
-      setShowResults(false);
-      return;
-    }
+      if (!receptHistory || receptHistory.length === 0) {
+        setErrors({ receptionId: "受診履歴が見つかりません" });
+        setShowResults(false);
+        return;
+      }
 
-    const receptIds = receptHistory.map(r => r.id);
+      const receptIds = receptHistory.map(r => r.id);
 
     // 全履歴分の結果を取得
-    const { data: results, error: resultsError } = await supabase
-      .from("kensa_result")
-      .select("recept_id, kensa_item, answer")
-      .in("recept_id", receptIds);
-
-    if (resultsError) {
-      console.error("Results fetch error:", resultsError);
-    }
+    const results = await fetchKensaResultsByReceptIds(receptIds);
 
     // 項目マスターを取得
     const masters = await fetchKensaItemData();

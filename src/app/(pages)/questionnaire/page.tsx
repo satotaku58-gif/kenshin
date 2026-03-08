@@ -6,8 +6,8 @@ import ReceptSearchDialog from "../../component/ReceptSearchDialog";
 import CommonStartForm from "../../component/CommonStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { supabase } from "../../supabaseClient";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
+import { fetchMonsinMaster, saveMonsinResults } from "@/lib/dbActions";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -47,28 +47,19 @@ function QuestionnaireContent() {
       // 既に質問データがある場合はフェッチをスキップ
       if (questions.length > 0) return;
 
-      const [qResult, aResult] = await Promise.all([
-        supabase
-          .from("monsin_question_content")
-          .select("id, content, answer_type")
-          .order("id", { ascending: true }),
-        supabase
-          .from("monsin_answer_content")
-          .select("type, content, answer_id")
-          .order("answer_id", { ascending: true })
-      ]);
+      try {
+        const { questions: qData, answers: aData } = await fetchMonsinMaster();
 
-      if (!qResult.error && qResult.data && !aResult.error && aResult.data) {
         // 回答タイプごとに選択肢をグループ化
         const optionsMap: { [key: number]: { id: number; content: string }[] } = {};
-        aResult.data.forEach((a) => {
+        aData.forEach((a) => {
           if (!optionsMap[a.type]) {
             optionsMap[a.type] = [];
           }
           optionsMap[a.type].push({ id: a.answer_id, content: a.content });
         });
 
-        const mappedQuestions = qResult.data.map((q) => ({
+        const mappedQuestions = qData.map((q) => ({
           id: q.id,
           label: q.content,
           options: optionsMap[q.answer_type] || [],
@@ -82,6 +73,8 @@ function QuestionnaireContent() {
           }
           return prev;
         });
+      } catch (error) {
+        console.error("Error fetching monsin master:", error);
       }
     };
     fetchQuestionsAndAnswers();
@@ -179,20 +172,18 @@ function QuestionnaireContent() {
       answer: parseInt(answers[idx])
     }));
 
-    const { error } = await supabase
-      .from("monsin_answer_result")
-      .insert(results);
-
-    if (error) {
-      console.error("Error saving answers:", error);
-      setSubmitError("回答の保存中にエラーが発生しました。");
-    } else {
+    try {
+      await saveMonsinResults(results);
+      
       alert("回答を保存しました。");
       // 入力フォームを閉じる、またはリセット
       setShowForm(false);
       setAnswers(new Array(questions.length).fill(""));
       setFormErrors({});
       setSubmitError("");
+    } catch (err: any) {
+      console.error("Error saving answers:", err);
+      setSubmitError(err.message || "回答の保存中にエラーが発生しました。");
     }
   };
 
