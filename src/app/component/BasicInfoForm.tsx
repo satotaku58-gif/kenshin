@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../supabaseClient";
 
 interface BasicInfoFormProps {
   editData?: any;
@@ -132,27 +131,31 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
       mailaddress: form.email,
     };
 
-    let result;
+    let endpoint = "/api/patient";
+    let method = "POST";
     if (mode === "edit" && editData?.id) {
-      result = await supabase
-        .from("patient_basic")
-        .update(patientData)
-        .eq("id", editData.id)
-        .select();
-    } else {
-      result = await supabase
-        .from("patient_basic")
-        .insert([patientData])
-        .select();
+      endpoint = `/api/patient/${editData.id}`;
+      method = "PATCH";
     }
 
-    const { data, error } = result;
-    if (error) {
-      alert((mode === "edit" ? "更新" : "登録") + "に失敗しました: " + error.message);
-    } else {
+    try {
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patientData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || (mode === "edit" ? "更新" : "登録") + "に失敗しました");
+      }
+
+      const data = await response.json();
       const patientId = data[0]?.id;
       setRegisteredId(patientId.toString());
       setShowDoneDialog(true);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
