@@ -8,7 +8,7 @@ import { supabase } from "../app/supabaseClient";
 export const fetchPatientBasic = async (patientId: string) => {
   const { data, error } = await supabase
     .from("patient_basic")
-    .select("id, name, birthdate, sex")
+    .select("*")
     .eq("id", patientId)
     .single();
 

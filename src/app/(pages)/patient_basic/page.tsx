@@ -3,7 +3,6 @@ import { useState } from "react";
 import BasicInfoForm from "../../component/BasicInfoForm";
 import AppHeader from "../../component/AppHeader";
 import PatientSearchDialog from "../../component/PatientSearchDialog";
-import { supabase } from "../../supabaseClient";
 
 export default function Home() {
   const [mode, setMode] = useState<"register" | "edit">("register");
@@ -16,19 +15,19 @@ export default function Home() {
     const targetId = id || patientId;
     if (!targetId) return;
 
-    const { data, error: fetchError } = await supabase
-      .from("patient_basic")
-      .select("*")
-      .eq("id", targetId)
-      .single();
-
-    if (fetchError || !data) {
-      setError("該当する患者が見つかりません");
-      setEditData(null);
-    } else {
+    try {
+      const response = await fetch(`/api/patient/${targetId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "該当する患者が見つかりません");
+      }
+      const data = await response.json();
       setEditData(data);
       setPatientId(data.id.toString());
       setError("");
+    } catch (err: any) {
+      setError(err.message || "該当する患者が見つかりません");
+      setEditData(null);
     }
   };
 
