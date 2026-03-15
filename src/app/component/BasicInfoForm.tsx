@@ -32,17 +32,17 @@ export default function BasicInfoForm({ editData, mode = "register" }: BasicInfo
     setErrors({});
     if (editData) {
       setForm({
-        name: editData.name || "",
-        nameKana: editData.name_kana || "",
-        birth: editData.birthdate || "",
+        name: (editData.name || "").toString(),
+        nameKana: (editData.name_kana || "").toString(),
+        birth: (editData.birthdate || "").toString(),
         gender: editData.sex === 1 ? "male" : editData.sex === 2 ? "female" : editData.sex === 9 ? "other" : "",
-        zip: editData.postcode || "",
-        address: editData.address || "",
-        tel: editData.phone || "",
-        email: editData.mailaddress || "",
-        insurerNumber: editData.Insurer_number || "",
-        insuredSymbol: editData.Insurance_cardcode || "",
-        insuredNumber: editData.Insurance_card_number || "",
+        zip: (editData.postcode ?? "").toString(),
+        address: (editData.address || "").toString(),
+        tel: (editData.phone ?? "").toString(),
+        email: (editData.mailaddress || "").toString(),
+        insurerNumber: (editData.Insurer_number ?? "").toString(),
+        insuredSymbol: (editData.Insurance_cardcode ?? "").toString(),
+        insuredNumber: (editData.Insurance_card_number ?? "").toString(),
       });
     } else {
       setForm(initialForm);
