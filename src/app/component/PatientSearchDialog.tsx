@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "../supabaseClient";
 
 interface Patient {
   id: number;
@@ -39,16 +38,19 @@ export default function PatientSearchDialog({
   // 常に最新を出すためにisOpen時にfetchする)
   const fetchPatients = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("patient_basic")
-      .select("id, name, birthdate, sex")
-      .order("id", { ascending: true });
-    if (!error && data) {
+    try {
+      const response = await fetch("/api/patient/list");
+      if (!response.ok) {
+        throw new Error("患者リストの取得に失敗しました");
+      }
+      const data = await response.json();
       setPatientList(data);
-    } else {
+    } catch (err) {
+      console.error(err);
       setPatientList([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // ダイアログが表示された瞬間にデータを取得する
