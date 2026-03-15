@@ -80,16 +80,22 @@ export const fetchCourseItemIds = async (courseId: number) => {
 };
 
 /**
- * 患者の受診履歴を上限件数分取得する
+ * 患者の受診履歴を上限件数分取得する（limit未指定時は全件）
  */
-export const fetchPatientReceptionHistory = async (patientId: string, baseDate: string, limit: number = 4) => {
-  const { data, error } = await supabase
+export const fetchPatientReceptionHistory = async (patientId: string, baseDate: string, limit?: number) => {
+  let query = supabase
     .from("recept")
-    .select("id, recept_id, recept_date")
+    .select("id, recept_id, recept_date, course")
     .eq("patient_id", patientId)
     .lte("recept_date", baseDate)
     .order("recept_date", { ascending: false })
-    .limit(limit);
+    .order("recept_id", { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error || !data) {
     throw new Error("受診履歴の取得に失敗しました");

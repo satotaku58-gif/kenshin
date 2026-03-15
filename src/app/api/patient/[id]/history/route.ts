@@ -11,8 +11,9 @@ export async function GET(
     const params = await props.params;
     const { id: patientId } = params;
     const { searchParams } = new URL(request.url);
-    const baseDate = searchParams.get("baseDate") || new Date().toISOString().split("T")[0];
-    const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : 4;
+    const baseDate = searchParams.get("baseDate") || "9999-12-31";
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Number(limitParam) : undefined;
 
     if (!patientId) {
       return NextResponse.json({ error: "patientId is required" }, { status: 400 });
