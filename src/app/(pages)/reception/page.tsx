@@ -4,7 +4,6 @@ import PatientSearchDialog from "../../component/PatientSearchDialog";
 import ReceptStartForm from "../../component/ReceptStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createReception } from "@/lib/dbActions";
 
 function ReceptionContent() {
   const router = useRouter();
@@ -100,7 +99,18 @@ function ReceptionContent() {
     }
 
     try {
-      const data = await createReception(patientId, receptDate, selectedCourse);
+      const response = await fetch("/api/reception", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId, receptDate, courseId: selectedCourse }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "受付登録に失敗しました");
+      }
+
+      const data = await response.json();
       alert("受付を完了しました。問診入力画面へ遷移します。");
       
       const receptId = data.recept_id;
