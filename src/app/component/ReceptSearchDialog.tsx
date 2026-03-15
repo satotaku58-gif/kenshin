@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
 
 interface Reception {
   id: number;
@@ -31,10 +30,14 @@ export default function ReceptSearchDialog({
 
   useEffect(() => {
     const fetchCourses = async () => {
-      const { data } = await supabase.from("kensa_course").select("id, name");
-      if (data) {
-        const courseMap = data.reduce((acc, curr) => ({ ...acc, [curr.id]: curr.name }), {});
+      try {
+        const response = await fetch("/api/kensa/courses");
+        if (!response.ok) throw new Error("コース一覧の取得に失敗しました");
+        const data = await response.json();
+        const courseMap = data.reduce((acc: any, curr: any) => ({ ...acc, [curr.id]: curr.name }), {});
         setCourses(courseMap);
+      } catch (error) {
+        console.error("fetchCourses error:", error);
       }
     };
     fetchCourses();
@@ -43,19 +46,17 @@ export default function ReceptSearchDialog({
   const fetchReceptions = async () => {
     if (!patientId) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("recept")
-      .select("id, recept_id, recept_date, course")
-      .eq("patient_id", patientId)
-      .order("recept_date", { ascending: true })
-      .order("recept_id", { ascending: true });
-    
-    if (!error && data) {
+    try {
+      const response = await fetch(`/api/patient/${patientId}/history`);
+      if (!response.ok) throw new Error("受付履歴の取得に失敗しました");
+      const data = await response.json();
       setReceptList(data);
-    } else {
+    } catch (error) {
+      console.error("fetchReceptions error:", error);
       setReceptList([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
