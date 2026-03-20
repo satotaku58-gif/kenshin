@@ -93,7 +93,7 @@ export default function ReceptSearchDialog({
             </svg>
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[60vh]">
           {loading ? (
             <div className="flex flex-col items-center py-12 text-slate-400">
               <div className={`w-10 h-10 border-4 border-slate-100 ${spinnerBorder} rounded-full animate-spin mb-4`}></div>
@@ -102,9 +102,9 @@ export default function ReceptSearchDialog({
           ) : (
             <div className="overflow-hidden border border-slate-100 rounded-xl">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                <table className="w-full text-left border-collapse sticky-header">
+                  <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]">
+                    <tr className="text-slate-600 text-xs font-bold uppercase tracking-wider">
                       <th className="px-6 py-4">受付ID</th>
                       <th className="px-6 py-4">受診日</th>
                       <th className="px-6 py-4">コース</th>

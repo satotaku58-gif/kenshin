@@ -7,7 +7,6 @@ import CommonStartForm from "../../component/CommonStartForm";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuestionnaire } from "../../context/QuestionnaireContext";
-import { saveMonsinResults } from "@/lib/dbActions";
 
 function QuestionnaireContent() {
   const searchParams = useSearchParams();
@@ -174,7 +173,18 @@ function QuestionnaireContent() {
     }));
 
     try {
-      await saveMonsinResults(results);
+      const response = await fetch("/api/monsin/results", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(results),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "回答の保存に失敗しました");
+      }
       
       alert("回答を保存しました。");
       // 入力フォームを閉じる、またはリセット
@@ -270,7 +280,20 @@ function QuestionnaireContent() {
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-slate-800">問診入力</h2>
-                      <p className="text-sm text-slate-500 font-medium">現在の健康状態や生活習慣について回答してください。</p>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm font-medium">
+                        <span className="text-emerald-700 bg-emerald-100/50 px-2 py-0.5 rounded flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-emerald-500 font-bold">ID:</span>
+                          {patientId}
+                        </span>
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">DATE:</span>
+                          {receptionDate}
+                        </span>
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">NO:</span>
+                          {receptionId}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <button
