@@ -225,6 +225,23 @@ export const saveMonsinResults = async (results: { recept_id: number; question: 
 };
 
 /**
+ * 指定された受付IDの問診回答を取得する
+ */
+export const fetchMonsinResultsByReceptId = async (receptId: number) => {
+  const { data, error } = await supabase
+    .from("monsin_answer_result")
+    .select("question, answer")
+    .eq("recept_id", receptId);
+
+  if (error) {
+    console.error("Monsin results fetch error:", error);
+    throw new Error("問診回答の取得に失敗しました");
+  }
+
+  return data;
+};
+
+/**
  * 検査コース一覧を取得する
  */
 export const fetchKensaCourses = async () => {

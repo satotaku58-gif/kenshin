@@ -120,6 +120,29 @@ function QuestionnaireContent() {
       }
       const receptData = await receptResponse.json();
       setReceptInternalId(receptData.id);
+
+      // 既存の問診回答を取得
+      try {
+        const resultsResponse = await fetch(`/api/monsin/results?receptId=${receptData.id}`);
+        if (resultsResponse.ok) {
+          const resultsData: { question: number; answer: number }[] = await resultsResponse.json();
+          if (resultsData.length > 0) {
+            const newAnswers = new Array(questions.length).fill("");
+            resultsData.forEach((result) => {
+              const qIdx = questions.findIndex(q => q.id === result.question);
+              if (qIdx !== -1) {
+                newAnswers[qIdx] = result.answer.toString();
+              }
+            });
+            setAnswers(newAnswers);
+          } else {
+            // 既存データがない場合は空で初期化
+            setAnswers(new Array(questions.length).fill(""));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch existing monsin results:", err);
+      }
       
       setErrors({});
       setShowForm(true);
