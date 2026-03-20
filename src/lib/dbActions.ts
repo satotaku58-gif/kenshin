@@ -32,7 +32,7 @@ export const fetchReception = async (patientId: string, receptionDate: string, r
     .single();
 
   if (error || !data) {
-    throw new Error("該当する受付データが見つかりません");
+    throw new Error("受付情報が存在しません");
   }
 
   return data;

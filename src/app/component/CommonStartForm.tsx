@@ -71,7 +71,8 @@ const CommonStartForm = (props: CommonStartFormProps) => {
               } rounded-xl ${ringColor} transition-all outline-none font-bold text-slate-700`}
               value={patientId}
               onChange={(e) => {
-                setPatientId(e.target.value);
+                const val = e.target.value.replace(/[^0-9]/g, "");
+                setPatientId(val);
                 if (errors.patientId) setErrors((prev) => ({ ...prev, patientId: "" }));
               }}
             />
@@ -130,7 +131,8 @@ const CommonStartForm = (props: CommonStartFormProps) => {
               } rounded-xl ${ringColor} transition-all outline-none font-bold text-slate-700`}
               value={receptionId}
               onChange={(e) => {
-                setReceptionId(e.target.value);
+                const val = e.target.value.replace(/[^0-9]/g, "");
+                setReceptionId(val);
                 if (errors.receptionId) setErrors((prev) => ({ ...prev, receptionId: "" }));
               }}
             />

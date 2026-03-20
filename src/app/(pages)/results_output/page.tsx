@@ -101,7 +101,7 @@ function ResultsOutputContent() {
       // 受付存在チェック (整合性の確認のみ)
       const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
       if (!receptResponse.ok) {
-        throw new Error("受付情報の取得に失敗しました");
+        throw new Error("受付情報が存在しません");
       }
 
       // 過去の受診履歴を最大4件取得（今回分を含む）

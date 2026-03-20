@@ -67,7 +67,7 @@ function ResultsInputContent() {
       const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
       if (!receptResponse.ok) {
         const errorData = await receptResponse.json();
-        throw new Error(errorData.error || "受付情報の取得に失敗しました");
+        throw new Error(errorData.error || "受付情報が存在しません");
       }
       const receptData = await receptResponse.json();
       setReceptPk(receptData.id);
