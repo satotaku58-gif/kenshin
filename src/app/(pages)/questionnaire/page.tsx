@@ -116,7 +116,7 @@ function QuestionnaireContent() {
       // 受付存在チェック
       const receptResponse = await fetch(`/api/patient/${patientId}/reception/${receptionDate}/${receptionId}`);
       if (!receptResponse.ok) {
-        throw new Error("受付情報の取得に失敗しました");
+        throw new Error("受付情報が存在しません");
       }
       const receptData = await receptResponse.json();
       setReceptInternalId(receptData.id);
