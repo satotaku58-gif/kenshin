@@ -2,16 +2,22 @@
 import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/app/supabaseClient";
 
 const AppHeader = () => {
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    router.push('/login');
-    router.refresh();
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      // ログアウト時も確実にリフレッシュして遷移させる
+      router.refresh();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const navItems = [
