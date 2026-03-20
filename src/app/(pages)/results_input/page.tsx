@@ -7,7 +7,6 @@ import CommonStartForm from "../../component/CommonStartForm";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useResultsInput } from "../../context/ResultsInputContext";
-import { saveKensaResults } from "@/lib/dbActions";
 
 function ResultsInputContent() {
   const searchParams = useSearchParams();
@@ -174,7 +173,18 @@ function ResultsInputContent() {
       }
 
       // kensa_result テーブルへ保存
-      await saveKensaResults(resultsToSave);
+      const response = await fetch("/api/kensa/results", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(resultsToSave),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "保存に失敗しました");
+      }
 
       setSaveMessage({ text: "検査結果を保存しました。", type: "success" });
     } catch (err: any) {

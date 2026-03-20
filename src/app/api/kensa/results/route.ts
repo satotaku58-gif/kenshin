@@ -1,22 +1,28 @@
 import { NextResponse } from "next/server";
-import { fetchKensaResultsByReceptIds } from "@/lib/dbActions";
+import { fetchKensaResultsByReceptIds, saveKensaResults } from "@/lib/dbActions";
 
 export const runtime = "edge";
 
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const ids = searchParams.get("receptIds");
-    if (!ids) {
-      return NextResponse.json({ error: "receptIds are required" }, { status: 400 });
-    }
-    const receptIds = ids.split(",").map(id => isNaN(Number(id)) ? id : Number(id));
+/* ... existing code ... */
+  }
+}
 
-    const data = await fetchKensaResultsByReceptIds(receptIds);
-    return NextResponse.json(data);
+export async function POST(request: Request) {
+  try {
+    const results = await request.json();
+    
+    if (!Array.isArray(results)) {
+      return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+    }
+
+    await saveKensaResults(results);
+    
+    return NextResponse.json({ success: true });
   } catch (error: any) {
+    console.error("API Kensa Results POST Error:", error);
     return NextResponse.json(
-      { error: error.message || "内部サーバーエラーが発生しました" },
+      { error: error.message || "Internal Server Error" },
       { status: 500 }
     );
   }
