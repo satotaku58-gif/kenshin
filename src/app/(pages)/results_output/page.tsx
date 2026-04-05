@@ -502,8 +502,8 @@ function ResultsOutputContent() {
                       value={findings}
                       onChange={(e) => setFindings(e.target.value)}
                       placeholder="こちらに所見を入力してください"
-                      className="w-full p-2 sm:p-3 text-[12px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-medium text-slate-700 min-h-[80px] sm:min-h-[90px] shadow-sm placeholder:text-slate-300"
-                      rows={3}
+                      className="w-full p-2 sm:p-3 text-[12px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-medium text-slate-700 min-h-[160px] sm:min-h-[180px] shadow-sm placeholder:text-slate-300"
+                      rows={6}
                     />
                   </div>
                   
