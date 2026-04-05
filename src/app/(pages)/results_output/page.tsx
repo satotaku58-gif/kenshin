@@ -493,11 +493,6 @@ function ResultsOutputContent() {
                         </svg>
                       </div>
                     </div>
-                    <div className="mt-2 lg:mt-auto py-1 sm:py-2">
-                       <div className="text-[10px] text-slate-400 font-medium leading-tight italic">
-                         ※ 選択した基準値は<br className="hidden lg:block"/>報告書に大きく印字されます。
-                       </div>
-                    </div>
                   </div>
                 </div>
               </div>

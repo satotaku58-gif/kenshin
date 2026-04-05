@@ -160,6 +160,38 @@ export const fetchKensaReferenceSetMaster = async () => {
 };
 
 /**
+ * 判定セットIDに関連する全項目ごとの判定範囲を取得する
+ */
+export const fetchKensaEvaluationRanges = async (setId: number) => {
+  const { data, error } = await supabase
+    .from("kensa_evaluation_range_master")
+    .select("item_id, low_value, high_value, evaluation")
+    .eq("set_id", setId);
+
+  if (error || !data) {
+    throw new Error("判定範囲マスターを読み取れませんでした");
+  }
+
+  return data;
+};
+
+/**
+ * 検査判定セットマスターを取得する
+ */
+export const fetchKensaEvaluationSetMaster = async () => {
+  const { data, error } = await supabase
+    .from("kensa_evaluation_set_master")
+    .select("id, name")
+    .order("id", { ascending: true });
+
+  if (error || !data) {
+    throw new Error("判定セットマスターを読み取れませんでした");
+  }
+
+  return data;
+};
+
+/**
  * 指定された受付IDリストの検査結果を取得する
  */
 export const fetchKensaResultsByReceptIds = async (receptIds: (number | string)[]) => {
