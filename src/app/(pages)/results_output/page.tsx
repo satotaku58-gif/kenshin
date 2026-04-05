@@ -546,7 +546,7 @@ function ResultsOutputContent() {
                           className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
                         >
                           <option value="">未設定</option>
-                          {referenceSets.map((set) => (
+                          {(referenceSets || []).map((set) => (
                             <option key={set.id} value={set.id.toString()}>
                               {set.name}
                             </option>
@@ -581,7 +581,7 @@ function ResultsOutputContent() {
                           className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
                         >
                           <option value="">未設定</option>
-                          {evaluationSets.map((set) => (
+                          {(evaluationSets || []).map((set) => (
                             <option key={set.id} value={set.id.toString()}>
                               {set.name}
                             </option>
@@ -617,7 +617,7 @@ function ResultsOutputContent() {
                       <th className="py-5 px-4 text-left border-b border-slate-200 sticky left-0 z-30 bg-slate-50/50 backdrop-blur-md min-w-[160px] shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">項目名</span>
                       </th>
-                      {historyData.map((h, i) => (
+                      {(historyData || []).map((h, i) => (
                         <th key={i} className={`py-5 px-4 text-center border-b border-slate-200 min-w-[130px] ${i === 0 ? 'bg-yellow-50/20' : ''}`}>
                           <div className="flex flex-col items-center gap-1">
                             {i === 0 && (
@@ -627,7 +627,7 @@ function ResultsOutputContent() {
                               {i === 0 ? '今回受診' : '前回以前'}
                             </div>
                             <div className={`text-sm font-black font-mono ${i === 0 ? 'text-yellow-900' : 'text-slate-600'}`}>
-                              {h.recept_date.replace(/-/g, '/')}
+                              {h.recept_date?.replace(/-/g, '/')}
                             </div>
                           </div>
                         </th>
@@ -638,12 +638,12 @@ function ResultsOutputContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {groupedData.map((group, gIdx) => (
+                    {(groupedData || []).map((group, gIdx) => (
                       <React.Fragment key={gIdx}>
                         <GroupHeader 
                           label={group.categoryName} 
                         />
-                        {group.items.map((item: any) => (
+                        {(group.items || []).map((item: any) => (
                           <TableRow key={item.id} item={item} />
                         ))}
                       </React.Fragment>
