@@ -92,6 +92,18 @@ function ResultsOutputContent() {
     }
   };
 
+  const handleSaveFindings = async () => {
+    // 保存処理のロジック（後ほど実装可能）
+    console.log("Saving findings:", findings);
+    alert("所見を保存します（シミュレーション）");
+  };
+
+  const handleSetReferenceSet = () => {
+    // 基準値設定の適用ロジック（後ほど実装可能）
+    console.log("Applying reference set:", selectedReferenceSetId);
+    alert("選択した基準値を設定しました");
+  };
+
   const handleEvaluate = () => {
     // 判定処理のロジック（後ほど実装可能）
     console.log("Evaluating with set:", selectedEvaluationSetId);
@@ -505,6 +517,17 @@ function ResultsOutputContent() {
                       className="w-full p-2 sm:p-3 text-[12px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-medium text-slate-700 min-h-[160px] sm:min-h-[180px] shadow-sm placeholder:text-slate-300"
                       rows={6}
                     />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleSaveFindings}
+                        className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 text-white text-[11px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center gap-2"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        所見を保存する
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="w-full lg:w-[240px] flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-slate-200/50 pt-4 lg:pt-0 lg:pl-6">
@@ -534,9 +557,16 @@ function ResultsOutputContent() {
                           </svg>
                         </div>
                       </div>
+                      <button
+                        onClick={handleSetReferenceSet}
+                        disabled={!selectedReferenceSetId}
+                        className="w-full py-2 bg-yellow-500 hover:bg-yellow-600 disabled:bg-slate-200 disabled:cursor-not-allowed text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all shadow-sm active:scale-[0.98] mt-1"
+                      >
+                        設定する
+                      </button>
                     </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 pt-2 border-t border-slate-100/50">
                       <div className="flex items-center gap-2 px-1">
                         <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -567,7 +597,7 @@ function ResultsOutputContent() {
                     <button
                       onClick={handleEvaluate}
                       disabled={!selectedEvaluationSetId}
-                      className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-200 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+                      className="w-full py-2.5 px-4 bg-yellow-500 hover:bg-yellow-600 disabled:bg-slate-200 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
