@@ -1,11 +1,12 @@
 "use server";
 
-import { supabase } from "../app/supabaseClient";
+import { createClient } from "../app/supabaseServer";
 
 /**
  * 患者IDから患者基本情報を取得する
  */
 export const fetchPatientBasic = async (patientId: string) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("patient_basic")
     .select("*")
@@ -23,6 +24,7 @@ export const fetchPatientBasic = async (patientId: string) => {
  * 受付情報を検証し、内部ID（pk）とコース等を取得する
  */
 export const fetchReception = async (patientId: string, receptionDate: string, receptionId: string) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("recept")
     .select("id, recept_id, course")
@@ -42,6 +44,7 @@ export const fetchReception = async (patientId: string, receptionDate: string, r
  * 問診の設問と選択肢を取得する
  */
 export const fetchMonsinMaster = async () => {
+  const supabase = await createClient();
   const [qResult, aResult] = await Promise.all([
     supabase
       .from("monsin_question_content")
@@ -67,6 +70,7 @@ export const fetchMonsinMaster = async () => {
  * コースIDに紐づく検査項目IDの一覧を取得する
  */
 export const fetchCourseItemIds = async (courseId: number) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_course_items")
     .select("item_id")
@@ -83,6 +87,7 @@ export const fetchCourseItemIds = async (courseId: number) => {
  * 患者の受診履歴を上限件数分取得する（limit未指定時は全件）
  */
 export const fetchPatientReceptionHistory = async (patientId: string, baseDate: string, limit?: number) => {
+  const supabase = await createClient();
   let query = supabase
     .from("recept")
     .select("id, recept_id, recept_date, course")
@@ -109,6 +114,7 @@ export const fetchPatientReceptionHistory = async (patientId: string, baseDate: 
  * itemIds が指定されない場合は全項目を取得する
  */
 export const fetchKensaItemData = async (itemIds?: number[]) => {
+  const supabase = await createClient();
   let query = supabase
     .from("kensa_item_master")
     .select(`
@@ -147,6 +153,7 @@ export const fetchKensaItemData = async (itemIds?: number[]) => {
  * 検査基準値セットマスターを取得する
  */
 export const fetchKensaReferenceSetMaster = async () => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_reference_set_master")
     .select("id, name")
@@ -163,6 +170,7 @@ export const fetchKensaReferenceSetMaster = async () => {
  * 判定セットIDに関連する全項目ごとの判定範囲を取得する
  */
 export const fetchKensaEvaluationRanges = async (setId: number) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_evaluation_range_master")
     .select("item_id, low_value, high_value, evaluation")
@@ -179,6 +187,7 @@ export const fetchKensaEvaluationRanges = async (setId: number) => {
  * 検査判定セットマスターを取得する
  */
 export const fetchKensaEvaluationSetMaster = async () => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_evaluation_set_master")
     .select("id, name")
@@ -195,6 +204,7 @@ export const fetchKensaEvaluationSetMaster = async () => {
  * 指定された受付IDリストの検査結果を取得する
  */
 export const fetchKensaResultsByReceptIds = async (receptIds: (number | string)[]) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_result")
     .select("recept_id, kensa_item, answer")
@@ -212,6 +222,7 @@ export const fetchKensaResultsByReceptIds = async (receptIds: (number | string)[
  * 基準値セットIDに関連する全項目ごとの基準値範囲を取得する
  */
 export const fetchKensaReferenceRanges = async (setId: number) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_reference_range_master")
     .select("item_id, low_value, high_value")
@@ -228,6 +239,7 @@ export const fetchKensaReferenceRanges = async (setId: number) => {
  * 検査結果を保存（upsert）する
  */
 export const saveKensaResults = async (results: { recept_id: number; kensa_item: number; answer: number }[]) => {
+  const supabase = await createClient();
   const { error } = await supabase
     .from("kensa_result")
     .upsert(results, { onConflict: "recept_id,kensa_item" });
@@ -244,6 +256,7 @@ export const saveKensaResults = async (results: { recept_id: number; kensa_item:
  * 問診回答を保存する
  */
 export const saveMonsinResults = async (results: { recept_id: number; question: number; answer: number }[]) => {
+  const supabase = await createClient();
   const { error } = await supabase
     .from("monsin_answer_result")
     .insert(results);
@@ -260,6 +273,7 @@ export const saveMonsinResults = async (results: { recept_id: number; question: 
  * 指定された受付IDの問診回答を取得する
  */
 export const fetchMonsinResultsByReceptId = async (receptId: number) => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("monsin_answer_result")
     .select("question, answer")
@@ -277,6 +291,7 @@ export const fetchMonsinResultsByReceptId = async (receptId: number) => {
  * 検査コース一覧を取得する
  */
 export const fetchKensaCourses = async () => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("kensa_course")
     .select("id, name")
@@ -295,7 +310,8 @@ export const fetchKensaCourses = async () => {
  * 受付日の最大IDを取得してインクリメントした新IDを割り当てる
  */
 export const createReception = async (patientId: string, receptDate: string, courseId: string) => {
-  // 受付日が一致するreceptのrecept_id最大値を取得
+  const supabase = await createClient();
+  // 受付日が一致するrecept of recept_id最大値を取得
   const { data: maxIdData, error: maxIdError } = await supabase
     .from("recept")
     .select("recept_id")

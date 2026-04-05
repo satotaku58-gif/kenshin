@@ -24,6 +24,9 @@ function ResultsOutputContent() {
     referenceSets, setReferenceSets,
     selectedReferenceSetId, setSelectedReferenceSetId,
     referenceRanges, setReferenceRanges,
+    evaluationSets, setEvaluationSets,
+    selectedEvaluationSetId, setSelectedEvaluationSetId,
+    evaluationRanges, setEvaluationRanges,
     isLoaded
   } = useResultsOutput();
 
@@ -71,6 +74,28 @@ function ResultsOutputContent() {
     } catch (err) {
       console.error("Failed to fetch reference ranges:", err);
     }
+  };
+
+  const handleEvaluationSetChange = async (setId: string) => {
+    setSelectedEvaluationSetId(setId);
+    if (!setId) {
+      setEvaluationRanges([]);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/kensa/evaluation-range?setId=${setId}`);
+      if (!response.ok) throw new Error("判定範囲の取得に失敗しました");
+      const ranges = await response.json();
+      setEvaluationRanges(ranges);
+    } catch (err) {
+      console.error("Failed to fetch evaluation ranges:", err);
+    }
+  };
+
+  const handleEvaluate = () => {
+    // 判定処理のロジック（後ほど実装可能）
+    console.log("Evaluating with set:", selectedEvaluationSetId);
+    alert("現在の項目結果に基づき判定処理を実行します（シミュレーション）");
   };
 
   const handleStart = async () => {
@@ -134,12 +159,27 @@ function ResultsOutputContent() {
       const refSets = await refSetResponse.json();
       if (refSets) setReferenceSets(refSets);
 
+      // 判定セットマスターを取得
+      const evalSetResponse = await fetch(`/api/kensa/evaluation-set`);
+      if (!evalSetResponse.ok) throw new Error("判定セットマスターの取得に失敗しました");
+      const evalSets = await evalSetResponse.json();
+      if (evalSets) setEvaluationSets(evalSets);
+
       // すでに基準値セットが選択されている場合は範囲データも取得
       if (selectedReferenceSetId) {
         const response = await fetch(`/api/kensa/reference-ranges?setId=${selectedReferenceSetId}`);
         if (response.ok) {
           const ranges = await response.json();
           setReferenceRanges(ranges);
+        }
+      }
+
+      // すでに判定セットが選択されている場合は範囲データも取得
+      if (selectedEvaluationSetId) {
+        const response = await fetch(`/api/kensa/evaluation-range?setId=${selectedEvaluationSetId}`);
+        if (response.ok) {
+          const ranges = await response.json();
+          setEvaluationRanges(ranges);
         }
       }
 
@@ -467,32 +507,73 @@ function ResultsOutputContent() {
                     />
                   </div>
                   
-                  <div className="w-full lg:w-[200px] flex flex-col gap-2 border-t lg:border-t-0 lg:border-l border-slate-200/50 pt-4 lg:pt-0 lg:pl-6">
-                    <div className="flex items-center gap-2 px-1">
-                      <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">基準値</span>
-                    </div>
-                    <div className="relative group">
-                      <select
-                        value={selectedReferenceSetId}
-                        onChange={(e) => handleReferenceSetChange(e.target.value)}
-                        className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
-                      >
-                        <option value="">未設定</option>
-                        {referenceSets.map((set) => (
-                          <option key={set.id} value={set.id.toString()}>
-                            {set.name}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4 4 4-4" />
+                  <div className="w-full lg:w-[240px] flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-slate-200/50 pt-4 lg:pt-0 lg:pl-6">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 px-1">
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
+                        <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">基準値</span>
+                      </div>
+                      <div className="relative group">
+                        <select
+                          value={selectedReferenceSetId}
+                          onChange={(e) => handleReferenceSetChange(e.target.value)}
+                          className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
+                        >
+                          <option value="">未設定</option>
+                          {referenceSets.map((set) => (
+                            <option key={set.id} value={set.id.toString()}>
+                              {set.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4 4 4-4" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 px-1">
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider">判定</span>
+                      </div>
+                      <div className="relative group">
+                        <select
+                          value={selectedEvaluationSetId}
+                          onChange={(e) => handleEvaluationSetChange(e.target.value)}
+                          className="w-full appearance-none p-2 sm:p-3 pr-10 text-[12px] sm:text-[13px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition-all font-black text-slate-800 shadow-sm cursor-pointer hover:border-slate-300"
+                        >
+                          <option value="">未設定</option>
+                          {evaluationSets.map((set) => (
+                            <option key={set.id} value={set.id.toString()}>
+                              {set.name}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4 4 4-4" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleEvaluate}
+                      disabled={!selectedEvaluationSetId}
+                      className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-200 disabled:cursor-not-allowed text-white text-[11px] font-black uppercase tracking-widest rounded-lg transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      判定する
+                    </button>
                   </div>
                 </div>
               </div>

@@ -14,6 +14,9 @@ interface ResultsOutputState {
   itemMasters: any[];
   findings: string;
   judge: string;
+  evaluationSets: any[];
+  selectedEvaluationSetId: string;
+  evaluationRanges: any[];
   referenceSets: any[];
   selectedReferenceSetId: string;
   referenceRanges: any[];
@@ -31,6 +34,9 @@ interface ResultsOutputContextType extends ResultsOutputState {
   setItemMasters: (val: any[]) => void;
   setFindings: (val: string) => void;
   setJudge: (val: string) => void;
+  setEvaluationSets: (val: any[]) => void;
+  setSelectedEvaluationSetId: (val: string) => void;
+  setEvaluationRanges: (val: any[]) => void;
   setReferenceSets: (val: any[]) => void;
   setSelectedReferenceSetId: (val: string) => void;
   setReferenceRanges: (val: any[]) => void;
@@ -50,6 +56,9 @@ const initialState: ResultsOutputState = {
   itemMasters: [],
   findings: "",
   judge: "判定しない",
+  evaluationSets: [],
+  selectedEvaluationSetId: "",
+  evaluationRanges: [],
   referenceSets: [],
   selectedReferenceSetId: "",
   referenceRanges: [],
@@ -93,6 +102,9 @@ export function ResultsOutputProvider({ children }: { children: ReactNode }) {
   const setItemMasters = (itemMasters: any[]) => setState(prev => ({ ...prev, itemMasters }));
   const setFindings = (findings: string) => setState(prev => ({ ...prev, findings }));
   const setJudge = (judge: string) => setState(prev => ({ ...prev, judge }));
+  const setEvaluationSets = (evaluationSets: any[]) => setState(prev => ({ ...prev, evaluationSets }));
+  const setSelectedEvaluationSetId = (selectedEvaluationSetId: string) => setState(prev => ({ ...prev, selectedEvaluationSetId }));
+  const setEvaluationRanges = (evaluationRanges: any[]) => setState(prev => ({ ...prev, evaluationRanges }));
   const setReferenceSets = (referenceSets: any[]) => setState(prev => ({ ...prev, referenceSets }));
   const setSelectedReferenceSetId = (selectedReferenceSetId: string) => setState(prev => ({ ...prev, selectedReferenceSetId }));
   const setReferenceRanges = (referenceRanges: any[]) => setState(prev => ({ ...prev, referenceRanges }));
@@ -117,6 +129,9 @@ export function ResultsOutputProvider({ children }: { children: ReactNode }) {
         setItemMasters,
         setFindings,
         setJudge,
+        setEvaluationSets,
+        setSelectedEvaluationSetId,
+        setEvaluationRanges,
         setReferenceSets,
         setSelectedReferenceSetId,
         setReferenceRanges,
