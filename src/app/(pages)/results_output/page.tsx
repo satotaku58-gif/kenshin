@@ -249,7 +249,7 @@ function ResultsOutputContent() {
             )}
           </div>
         </td>
-        {historyData.map((h, i) => (
+        {(historyData || []).map((h, i) => (
           <td 
             key={i} 
             className={`py-3 px-4 text-center font-mono text-[13px] border-r border-slate-100 ${
@@ -269,7 +269,7 @@ function ResultsOutputContent() {
   const GroupHeader = ({ label }: { label: string }) => (
     <tr className="bg-slate-50/50 backdrop-blur-sm">
       <td 
-        colSpan={2 + historyData.length} 
+        colSpan={2 + (historyData?.length || 0)} 
         className="py-2 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] border-y border-slate-100"
       >
         <div className="flex items-center gap-2">
@@ -305,19 +305,19 @@ function ResultsOutputContent() {
             <tr className="bg-slate-50">
               <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-8 font-bold bg-slate-100/50">分類</th>
               <th className="py-1 px-2 text-left border-b border-r border-slate-300 w-32 font-bold bg-slate-100/50">項目名</th>
-              {historyData.map((h, i) => (
+              {(historyData || []).map((h, i) => (
                 <th key={i} className={`py-1 px-1 text-center border-b border-r border-slate-300 min-w-[45px] ${i === 0 ? 'bg-slate-100 font-bold' : 'font-medium'}`}>
-                  <div className="scale-90">{h.recept_date.substring(5).replace(/-/g, '/')}</div>
+                  <div className="scale-90">{h.recept_date?.substring(5).replace(/-/g, '/')}</div>
                 </th>
               ))}
               <th className="py-1 px-1 text-center border-b border-slate-300 w-14 font-bold">基準値</th>
             </tr>
           </thead>
           <tbody>
-            {groups.map((group, gIdx) => (
+            {(groups || []).map((group, gIdx) => (
               <React.Fragment key={gIdx}>
                 {group.items.map((item, iIdx) => {
-                  const range = referenceRanges.find(r => r.item_id === item.id);
+                  const range = (referenceRanges || []).find(r => r.item_id === item.id);
                   const rangeDisplay = range ? `${range.low_value}～${range.high_value}` : "-";
                   
                   return (
@@ -337,7 +337,7 @@ function ResultsOutputContent() {
                           {item.unit && <span className="text-[7px] font-normal">{item.unit}</span>}
                         </div>
                       </td>
-                      {historyData.map((h, i) => (
+                      {(historyData || []).map((h, i) => (
                         <td key={i} className={`py-1 px-1 text-center border-r border-slate-200 font-mono ${i === 0 ? 'bg-yellow-50/30 font-bold' : ''}`}>
                           {formatValue(h, item)}
                         </td>
@@ -356,14 +356,14 @@ function ResultsOutputContent() {
 
   const groupedData = React.useMemo(() => {
     const presentItemIds = new Set();
-    historyData.forEach((h: any) => {
+    (historyData || []).forEach((h: any) => {
       // Mapオブジェクト（results）からキー（itemId）を抽出
-      if (h.results && typeof h.results.forEach === 'function') {
+      if (h?.results && typeof h.results.forEach === 'function') {
         h.results.forEach((_: any, itemId: any) => presentItemIds.add(itemId));
       }
     });
 
-    const visibleItems = itemMasters.filter(item => presentItemIds.has(item.id));
+    const visibleItems = (itemMasters || []).filter(item => presentItemIds.has(item.id));
 
     const result: { categoryId: any, categoryName: string, items: any[] }[] = [];
     let lastCategoryId: any = null;
@@ -384,14 +384,15 @@ function ResultsOutputContent() {
   }, [historyData, itemMasters]);
 
   const splitIndex = React.useMemo(() => {
-    const totalItems = groupedData.reduce((acc, g) => acc + g.items.length, 0);
+    const data = groupedData || [];
+    const totalItems = data.reduce((acc, g) => acc + (g.items?.length || 0), 0);
     // 所見欄の高さを項目数（約6項目分）として換算
     const findingsWeight = 6;
     const targetWeight = (totalItems + findingsWeight) / 2;
     
     let currentWeight = 0;
-    for (let i = 0; i < groupedData.length; i++) {
-      const nextWeight = currentWeight + groupedData[i].items.length;
+    for (let i = 0; i < data.length; i++) {
+      const nextWeight = currentWeight + (data[i].items?.length || 0);
       if (nextWeight >= targetWeight) {
         // 半分を超える前と後のどちらがよりバランスが良いか比較
         if (Math.abs(targetWeight - currentWeight) < Math.abs(nextWeight - targetWeight)) {
@@ -401,7 +402,7 @@ function ResultsOutputContent() {
       }
       currentWeight = nextWeight;
     }
-    return Math.ceil(groupedData.length / 2);
+    return Math.ceil(data.length / 2);
   }, [groupedData]);
 
   return (
